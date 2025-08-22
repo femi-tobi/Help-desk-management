@@ -3,22 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login page</title>
+    <title>Login - Helpdesk Solution</title>
     <link rel="stylesheet" href="login.css">
 </head>
 <body>
-    
-    <div class = "login form">
-        <img id = "center-image" src="mb.jpeg" alt="center-image">
-        <form action="">
-            <p class="email-login">Login with your email address</p>
-            <div class="input-box">
-                <input type="text" placeholder="email address" required>
+    <div class="login-container">
+        <div class="login-form">
+            <div class="logo-section">
+                <img id="center-image" src="mb.jpeg" alt="Logo">
+                <h1>Login</h1>
             </div>
+            
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="input-group">
+                    <div class="input-box">
+                        <input type="email" id="email" name="email" placeholder="Enter your email address" required>
+                    </div>
+                </div>
 
-            <button type="submit" class="btn"><a href="index.html">Submit</a></button>
-        </form>
-
+                <button type="submit" class="btn">Submit</button>
+            </form>
+        </div>
     </div>
+
+    <script>
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            
+            if (email) {
+                const btn = document.querySelector('.btn');
+                btn.textContent = 'Submitting...';
+                btn.disabled = true;
+                
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+            }
+        }
+    </script>
 </body>
 </html>
