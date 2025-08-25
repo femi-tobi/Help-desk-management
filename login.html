@@ -29,17 +29,20 @@
     <script>
         function handleLogin(event) {
             event.preventDefault();
-            
+
             const email = document.getElementById('email').value;
-            
+
             if (email) {
+                // store the email so other pages (navbar) can read it
+                try { sessionStorage.setItem('userEmail', email); } catch(e) { /* ignore if storage blocked */ }
+
                 const btn = document.querySelector('.btn');
                 btn.textContent = 'Submitting...';
                 btn.disabled = true;
-                
+
                 setTimeout(() => {
                     window.location.href = 'index.html';
-                }, 1000);
+                }, 700);
             }
         }
     </script>

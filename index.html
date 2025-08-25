@@ -103,7 +103,20 @@
     </section>
   </div>
 
-</body>
-</html>
+  <script>
+    // populate navbar user display from sessionStorage
+    (function(){
+      try {
+        var email = sessionStorage.getItem('userEmail');
+        if (email) {
+          var h5 = document.querySelector('.site-name h5');
+          if (h5) h5.textContent = email;
+          var avatar = document.querySelector('.user-icon');
+          if (avatar && avatar.textContent.trim() === 'U') avatar.textContent = email.charAt(0).toUpperCase();
+        }
+      } catch (e) { /* ignore */ }
+    })();
+  </script>
+
 </body>
 </html>
