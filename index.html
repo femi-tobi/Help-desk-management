@@ -78,7 +78,7 @@
       </div>
     </div>
     <div class="navbar-right">
-      <button class="nav-cta">Reports</button>
+      <button class="nav-cta"><a href="reports.html">Reports</a></button>
       <button class="nav-cta" id="notifBtn" style="background:none;padding:0;border:none;box-shadow:none;cursor:pointer;position:relative;">
         <svg id="notifBell" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;">
           <path d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 002 2zm6-6V11c0-3.07-1.63-5.64-4.5-6.32V4a1.5 1.5 0 00-3 0v.68C7.63 5.36 6 7.92 6 11v5l-1.7 1.7A1 1 0 005 20h14a1 1 0 00.7-1.7L18 16z" stroke="#22a7f0" stroke-width="2" fill="none"/>
@@ -96,8 +96,8 @@
   <div class="wrap">
     <div class="search-wrap">
       <div class="search" role="search" aria-label="Search reports">
-        <input type="search" placeholder="Search here" aria-label="Search reports" />
-        <button aria-label="search">
+        <input id="searchInput" type="search" placeholder="Search by reporter name or email" aria-label="Search reports" />
+        <button aria-label="search" type="button" onclick="loadReports()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 21l-4.35-4.35" stroke="#445" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="11" cy="11" r="6" stroke="#445" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </div>
@@ -212,7 +212,25 @@
       const reports = JSON.parse(localStorage.getItem('helpdeskReports') || '[]');
       const tbody = document.getElementById('reportTableBody');
       tbody.innerHTML = '';
-      reports.forEach(function(report, idx) {
+      // Determine filter
+      const filter = document.getElementById('filterLabel').textContent.trim();
+      const userEmail = sessionStorage.getItem('userEmail') || '';
+      let filtered = reports;
+      if (filter === 'Unanswered') {
+        filtered = reports.filter(r => !r.status || r.status === 'open');
+      } else if (filter === 'Assigned to me') {
+        filtered = reports.filter(r => r.staff && userEmail && r.staff.toLowerCase() === userEmail.toLowerCase());
+      } else if (filter === 'Assigned to others') {
+        filtered = reports.filter(r => r.staff && userEmail && r.staff.toLowerCase() !== userEmail.toLowerCase());
+      } // else 'All reports' shows all
+
+      // Search filter
+      const searchValue = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+      if (searchValue) {
+        filtered = filtered.filter(r => (r.reportedBy || '').toLowerCase().includes(searchValue));
+      }
+
+      filtered.forEach(function(report, idx) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${idx + 1}</td>
@@ -227,6 +245,8 @@
         `;
         tbody.appendChild(tr);
       });
+  // Live search as user types
+  document.getElementById('searchInput').addEventListener('input', loadReports);
     }
     window.addEventListener('DOMContentLoaded', loadReports);
     // populate navbar user display from sessionStorage
@@ -260,6 +280,7 @@
       btn.onclick = function() {
         filterDropdown.style.display = 'none';
         filterLabel.textContent = btn.getAttribute('data-filter');
+        loadReports();
       };
     });
 

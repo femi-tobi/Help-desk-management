@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+    .navbar{display:flex;justify-content:space-between;align-items:center;background:#fafafa;padding:12px 22px;border-bottom:1px solid #ececec}
+    .navbar-left{display:flex;align-items:center;gap:14px}
+    .navbar-left img{height:48px}
+    .site-name{font-weight:700}
+    .navbar-right{display:flex;align-items:center;gap:12px}
+    .nav-cta{background:#22a7f0;color:#fff;padding:8px 14px;border-radius:24px;border:none}
+    .user-icon{width:42px;height:42px;border-radius:50%;background:#eef6fb;display:flex;align-items:center;justify-content:center}
+    .container { max-width: 900px; margin: 40px auto; background: #fff; border-radius: 30px; box-shadow: 0 2px 12px rgba(0,0,0,0.12); padding: 32px 28px 24px 28px; }
+    .back-btn { font-size: 36px; color: #222; background: none; border: none; cursor: pointer; margin-bottom: 10px; }
+    .charts { display: flex; flex-direction: column; align-items: center; }
+    .chart-container { width: 400px; max-width: 100%; margin-bottom: 32px; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-left">
+      <img src="mb.jpeg" alt="logo">
+      <div class="site-name">Welcome, <span id="userName">User</span></div>
+    </div>
+    <div class="navbar-right">
+      <button class="nav-cta" onclick="exportToExcel()">Export To Excel</button>
+      <div class="user-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="4" fill="#22a7f0"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7" fill="#22a7f0"/></svg></div>
+    </div>
+  </nav>
+  <div class="container">
+    <button class="back-btn" onclick="window.location.href='index.html'">&#8592;</button>
+    <div class="charts">
+      <div class="chart-container">
+        <canvas id="pieChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <canvas id="barChart"></canvas>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Set user name from sessionStorage
+    document.getElementById('userName').textContent = sessionStorage.getItem('userEmail') || 'User';
+
+    // Get reports from localStorage
+    function getReports() {
+      return JSON.parse(localStorage.getItem('helpdeskReports') || '[]');
+    }
+
+    // Pie chart: Pending vs Resolved
+    function getStatusCounts(reports) {
+      let pending = 0, resolved = 0;
+      reports.forEach(r => {
+        if (r.status && r.status.toLowerCase() === 'resolved') resolved++;
+        else pending++;
+      });
+      return { pending, resolved };
+    }
+
+    // Bar chart: Count by department
+    function getDeptCounts(reports) {
+      const counts = {};
+      reports.forEach(r => {
+        const dept = r.department || 'Unknown';
+        counts[dept] = (counts[dept] || 0) + 1;
+      });
+      return counts;
+    }
+
+    function renderCharts() {
+      const reports = getReports();
+      // Pie chart
+      const { pending, resolved } = getStatusCounts(reports);
+      const pieData = {
+        labels: ['Pending', 'Resolved'],
+        datasets: [{
+          data: [pending, resolved],
+          backgroundColor: ['#9b8cff', '#ff9696'],
+        }]
+      };
+      const pieChart = new Chart(document.getElementById('pieChart').getContext('2d'), {
+        type: 'pie',
+        data: pieData,
+        options: {
+          plugins: {
+            legend: { display: true, position: 'right' },
+            tooltip: { enabled: true },
+            datalabels: { display: false }
+          },
+          responsive: true,
+        }
+      });
+      // Bar chart
+      const deptCounts = getDeptCounts(reports);
+      const barData = {
+        labels: Object.keys(deptCounts),
+        datasets: [{
+          label: 'Reports',
+          data: Object.values(deptCounts),
+          backgroundColor: '#9b8cff',
+        }]
+      };
+      const barChart = new Chart(document.getElementById('barChart').getContext('2d'), {
+        type: 'bar',
+        data: barData,
+        options: {
+          scales: {
+            y: { beginAtZero: true }
+          },
+          plugins: {
+            legend: { display: false }
+          },
+          responsive: true,
+        }
+      });
+    }
+    window.addEventListener('DOMContentLoaded', renderCharts);
+
+    // Export to Excel (CSV)
+    function exportToExcel() {
+      const reports = getReports();
+      if (!reports.length) return alert('No reports to export!');
+      const headers = ['Issue', 'Description', 'Date Reported', 'Time Reported', 'Reported By', 'Branch', 'Resolution Path', 'Department', 'Staff Assigned', 'Status', 'Resolution Time', 'Date Closed'];
+      const rows = reports.map(r => [
+        r.issue, r.description, r.dateReported, r.timeReported, r.reportedBy, r.branch, r.resolution, r.department, r.staff, r.status, r.resolutionTime, r.dateClosed
+      ]);
+      let csv = headers.join(',') + '\n';
+      rows.forEach(row => {
+        csv += row.map(val => '"' + (val || '') + '"').join(',') + '\n';
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'reports.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>
