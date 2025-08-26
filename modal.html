@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modal Popup</title>
+    <style>
+        
+         /* navbar (preserve user's existing look) */
+        .navbar{display:flex;justify-content:space-between;align-items:center;background:#fafafa;padding:12px 22px;border-bottom:1px solid #ececec}
+        .navbar-left{display:flex;align-items:center;gap:14px}
+        .navbar-left img{height:48px}
+        .site-name{font-weight:700}
+        .navbar-right{display:flex;align-items:center;gap:12px}
+        .nav-cta{background:#22a7f0;color:#fff;padding:8px 14px;border-radius:24px;border:none}
+        .user-icon{width:42px;height:42px;border-radius:50%;background:#eef6fb;display:flex;align-items:center;justify-content:center}
+
+
+        .modal-wrapper {display: flex;justify-content: center;align-items: center;}
+        .modal-content {background: #fff;padding: 20px;border-radius: 8px;background-color: rgb(213, 211, 211);margin-top: 20px;width: 50%;height: 500px;}
+        .input-box input{height: 20px;width: 40%;}
+        .input-email input{border: none; background-color: transparent;border-bottom: 2px solid #8f8e8e;outline: none;border-radius: 0;}
+        .btn{margin-top: 20px;width: 20%;height: 35px;}   
+    </style>
+</head>
+<body>
+    
+       <nav class="navbar">
+    <div class="navbar-left">
+      <img src="mb.jpeg" alt="logo">
+      <div class="site-name"><h3>WELCOME,</h3>
+        <h5>oluwatobi</h5>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <button class="nav-cta">Reports</button>
+      <div class="user-icon">U</div>
+    </div>
+  </nav>
+
+    <div class="modal-wrapper">
+        <div class="modal-content">
+            <h1>Input Report</h1>
+            <form id="reportForm" onsubmit="handleReport(event)">
+                <div class="input-group">
+                    <div class="input-email">
+                        <h4>To:</h4>
+                        <input type="email" id="reportInput" name="email" placeholder="Enter email address" required>
+                    </div>
+                    <div class="input-box">
+                        <h4>Issue:</h4>
+                        <input type="text" id="reportInput" name="reportInput" placeholder="Describe your issue..." required>
+                    </div>
+                    <div class="input-box">
+                        <h4>Issue:</h4>
+                        <input type="text" id="reportInput" name="reportInput" placeholder="Describe your issue..." required>
+                    </div>
+                    <div class="input-box">
+                        <h4>Issue:</h4>
+                        <input type="text" id="reportInput" name="reportInput" placeholder="Describe your issue..." required>
+                    </div>
+                    <div class="flex-input">
+                    <div class="input-box">
+                        <h4>Issue:</h4>
+                        <input type="text" id="reportInput" name="reportInput" placeholder="Describe your issue..." required>
+                    </div>
+                    <div class="input-box">
+                        <h4>Issue:</h4>
+                        <input type="text" id="reportInput" name="reportInput" placeholder="Describe your issue..." required>
+                    </div>
+                    <div class="input-box">
+                        <h4>Issue:</h4>
+                        <input type="text" id="reportInput" name="reportInput" placeholder="Describe your issue..." required>
+                    </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn">Submit</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        
+    </script>
+</body>
+</html>
