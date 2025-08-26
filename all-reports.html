@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All Reports</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+    .container { max-width: 1200px; margin: 40px auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.12); padding: 32px 28px 24px 28px; }
+    h2 { text-align: center; margin-bottom: 24px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; }
+    th, td { padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: left; }
+    th { background: #f3f8fc; color: #22a7f0; font-weight: 600; }
+    tr:last-child td { border-bottom: none; }
+    .back-btn { display: inline-block; margin-bottom: 18px; color: #22a7f0; text-decoration: none; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="back-btn">&larr; Back to Dashboard</a>
+    <h2>All Reports</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>S/N</th>
+          <th>Issue no</th>
+          <th>Issue reported</th>
+          <th>Issue description</th>
+          <th>Date reported</th>
+          <th>Time reported</th>
+          <th>Reported by</th>
+          <th>Branch</th>
+          <th>Resolution path</th>
+          <th>Department</th>
+          <th>Staff assigned</th>
+          <th>Status</th>
+          <th>Resolution time</th>
+          <th>Date closed</th>
+        </tr>
+      </thead>
+      <tbody id="allReportsBody">
+        <!-- Reports will be loaded here -->
+      </tbody>
+    </table>
+  </div>
+  <script>
+    function loadAllReports() {
+      const reports = JSON.parse(localStorage.getItem('helpdeskReports') || '[]');
+      const tbody = document.getElementById('allReportsBody');
+      tbody.innerHTML = '';
+      reports.forEach(function(report, idx) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${idx + 1}</td>
+          <td>ISSUE-${1000 + idx}</td>
+          <td>${report.issue || ''}</td>
+          <td>${report.description || ''}</td>
+          <td>${report.dateReported || ''}</td>
+          <td>${report.timeReported || ''}</td>
+          <td>${report.reportedBy || ''}</td>
+          <td>${report.branch || ''}</td>
+          <td>${report.resolution || ''}</td>
+          <td>${report.department || ''}</td>
+          <td>${report.staff || ''}</td>
+          <td>${report.status || ''}</td>
+          <td>${report.resolutionTime || ''}</td>
+          <td>${report.dateClosed || ''}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    window.addEventListener('DOMContentLoaded', loadAllReports);
+  </script>
+</body>
+</html>

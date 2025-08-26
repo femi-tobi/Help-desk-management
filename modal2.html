@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <style>
+         /* navbar (preserve user's existing look) */
+        .navbar{display:flex;justify-content:space-between;align-items:center;background:#fafafa;padding:12px 22px;border-bottom:1px solid #ececec}
+        .navbar-left{display:flex;align-items:center;gap:14px}
+        .navbar-left img{height:48px}
+        .site-name{font-weight:700}
+        .navbar-right{display:flex;align-items:center;gap:12px}
+        .nav-cta{background:#22a7f0;color:#fff;padding:8px 14px;border-radius:24px;border:none}
+        .user-icon{width:42px;height:42px;border-radius:50%;background:#eef6fb;display:flex;align-items:center;justify-content:center}
+
+         body {
+                        font-family: Arial, sans-serif;
+                        background: #f4f4f4;
+                        margin: 0;
+                        padding: 0;
+                    }
+                    .modal-container {
+                        background: #fff;
+                        max-width: 500px;
+                        margin: 40px auto;
+                        border-radius: 10px;
+                        box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+                        padding: 32px 28px 24px 28px;
+                        position: relative;
+                    }
+                    .back-icon {
+                        position: absolute;
+                        left: 18px;
+                        top: 18px;
+                        font-size: 22px;
+                        color: #22a7f0;
+                        cursor: pointer;
+                        text-decoration: none;
+                    }
+                    h2 {
+                        text-align: center;
+                        margin-bottom: 24px;
+                    }
+                    form label {
+                        display: block;
+                        margin-bottom: 6px;
+                        font-weight: 500;
+                    }
+                    form input, form select, form textarea {
+                        width: 100%;
+                        padding: 8px 10px;
+                        margin-bottom: 18px;
+                        border: none;
+                        border-bottom: 2px solid #8f8e8e;
+                        background: transparent;
+                        outline: none;
+                        font-size: 15px;
+                        border-radius: 0;
+                        resize: none;
+                    }
+                    form select {
+                        background: #f9f9f9;
+                    }
+                    .flex-row {
+                        display: flex;
+                        gap: 16px;
+                        padding-bottom: 20px;
+                    }
+                    .flex-row > div {
+                        flex: 1;
+                        padding-top: 12px;
+                    }
+                    .btn {
+                        background: #22a7f0;
+                        color: #fff;
+                        border: none;
+                        padding: 10px 0;
+                        width: 100%;
+                        border-radius: 4px;
+                        font-size: 16px;
+                        cursor: pointer;
+                        margin-top: 8px;
+                        transition: background 0.2s;
+                    }
+                    .btn:hover {
+                        background: #1780b8;
+                    }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+    <div class="navbar-left">
+      <img src="mb.jpeg" alt="logo">
+      <div class="site-name"><h3>WELCOME,</h3>
+        <h5>oluwatobi</h5>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <button class="nav-cta">Reports</button>
+      <button class="nav-cta" id="notifBtn" style="background:none;padding:0;border:none;box-shadow:none;cursor:pointer;position:relative;">
+        <svg id="notifBell" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;">
+          <path d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 002 2zm6-6V11c0-3.07-1.63-5.64-4.5-6.32V4a1.5 1.5 0 00-3 0v.68C7.63 5.36 6 7.92 6 11v5l-1.7 1.7A1 1 0 005 20h14a1 1 0 00.7-1.7L18 16z" stroke="#22a7f0" stroke-width="2" fill="none"/>
+        </svg>
+        <span id="notifBadge" style="display:none;position:absolute;top:2px;right:2px;width:10px;height:10px;background:#22a7f0;border-radius:50%;"></span>
+      </button>
+      <div class="user-icon" id="userIcon" style="position:relative;cursor:pointer;">U
+        <div id="userDropdown" style="display:none;position:absolute;top:48px;right:0;min-width:120px;background:#fff;border-radius:12px;box-shadow:0 4px 18px rgba(34,167,240,0.13);padding:8px 0;z-index:20;">
+          <button style="width:100%;background:none;color:#072544;text-align:left;padding:10px 18px;border:none;box-shadow:none;cursor:pointer;">Logout</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+          <div class="modal-container">
+                    <a href="index.html" class="back-icon" title="Back to main page">&#8592;</a>
+                    <h2>Submitted Report</h2>
+                    <form id="reportForm" onsubmit="handleReport(event)">
+                        <label for="issue">Issue Reported</label>
+                        <input type="text" id="issue" name="issue" required>
+
+                        <label for="description">Issue Description</label>
+                        <textarea id="description" name="description" rows="3" required></textarea>
+
+                        <div class="flex-row">
+                            <div>
+                                <label for="branch">Branch</label>
+                                <select id="branch" name="branch" required>
+                                    <option value="">Select branch</option>
+                                    <option value="ikeja">Ikeja</option>
+                                    <option value="ota">Ota</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="department">Department</label>
+                                <select id="department" name="department" required onchange="updateStaffOptions()">
+                                    <option value="">Select department</option>
+                                    <option value="is">IS</option>
+                                    <option value="finance">Finance</option>
+                                    <option value="ppd">PPD</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <label for="resolution">Resolution Path</label>
+                        <input type="text" id="resolution" name="resolution" required>
+
+                        <div class="flex-row">
+                            <div>
+                                <label for="staff">Staff Assigned</label>
+                                <select id="staff" name="staff" required>
+                                    <option value="">Select staff</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="status">Status</label>
+                                <select id="status" name="status" required>
+                                    <option value="">Select status</option>
+                                    <option value="open">Open</option>
+                                    <option value="in-progress">In Progress</option>
+                                    <option value="resolved">Resolved</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn">Submit</button>
+                    </form>
+                </div>
+</body>
+   <script>
+        // Load report details for editing
+        document.addEventListener('DOMContentLoaded', function() {
+            const idx = sessionStorage.getItem('selectedReportIdx');
+            if (idx === null) return;
+            const reports = JSON.parse(localStorage.getItem('helpdeskReports') || '[]');
+            const report = reports[idx];
+            if (!report) return;
+            // Fill form fields
+            document.getElementById('issue').value = report.issue || '';
+            document.getElementById('description').value = report.description || '';
+            document.getElementById('branch').value = report.branch || '';
+            document.getElementById('department').value = report.department || '';
+            document.getElementById('staff').innerHTML = `<option value="${report.staff}">${report.staff}</option>`;
+            document.getElementById('status').value = report.status || '';
+            document.getElementById('resolution').value = report.resolution || '';
+            // Make all fields except resolution and status readonly/disabled
+            document.getElementById('issue').readOnly = true;
+            document.getElementById('description').readOnly = true;
+            document.getElementById('branch').disabled = true;
+            document.getElementById('department').disabled = true;
+            document.getElementById('staff').disabled = true;
+        });
+
+        document.getElementById('reportForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const idx = sessionStorage.getItem('selectedReportIdx');
+            if (idx === null) return;
+            let reports = JSON.parse(localStorage.getItem('helpdeskReports') || '[]');
+            if (!reports[idx]) return;
+            // Only update resolution and status
+            reports[idx].resolution = document.getElementById('resolution').value;
+            reports[idx].status = document.getElementById('status').value;
+            localStorage.setItem('helpdeskReports', JSON.stringify(reports));
+            alert('Report updated!');
+            window.location.href = 'index.html';
+        });
+   </script>
+</html>

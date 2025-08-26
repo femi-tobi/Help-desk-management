@@ -61,6 +61,14 @@
   </style>
 </head>
 <body>
+  <!-- Notification Modal -->
+  <div id="notifModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.18);z-index:2000;justify-content:center;align-items:center;">
+    <div style="background:#fff;padding:24px 28px 18px 28px;border-radius:12px;min-width:320px;max-width:90vw;max-height:80vh;overflow-y:auto;position:relative;">
+      <button id="closeNotifModal" style="position:absolute;top:10px;right:16px;font-size:20px;background:none;border:none;cursor:pointer;">&times;</button>
+      <h3 style="margin-bottom:18px;color:#22a7f0;">Assigned Reports</h3>
+      <ul id="notifList" style="list-style:none;padding:0;margin:0;"></ul>
+    </div>
+  </div>
 
   <nav class="navbar">
     <div class="navbar-left">
@@ -113,7 +121,7 @@
               <button class="pill" style="width:100%;background:none;color:#072544;text-align:left;padding:10px 18px;box-shadow:none;" data-filter="Assigned to others">Assigned to others</button>
             </div>
           </div>
-          <button class="pill">See More</button>
+          <a class="pill" href="all-reports.html" style="text-decoration:none;">See More</a>
         </div>
       </div>
     </section>
@@ -127,16 +135,11 @@
             <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Issue no</th>
             <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Issue reported</th>
             <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Issue description</th>
-            <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Date reported</th>
-            <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Time reported</th>
             <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Reported by</th>
-            <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Branch</th>
             <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Resolution path</th>
             <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Department</th>
             <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Staff assigned</th>
             <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Status</th>
-            <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Resolution time</th>
-            <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Date closed</th>
           </tr>
         </thead>
         <tbody id="reportTableBody">
@@ -147,6 +150,85 @@
   </div>
 
   <script>
+    // Show notification modal with assigned reports
+    document.getElementById('notifBtn').addEventListener('click', function(e) {
+      e.stopPropagation();
+      const reports = JSON.parse(localStorage.getItem('helpdeskReports') || '[]');
+      const userEmail = sessionStorage.getItem('userEmail');
+      const notifList = document.getElementById('notifList');
+      notifList.innerHTML = '';
+      let found = false;
+      reports.forEach(function(report, idx) {
+        if (report.staff && userEmail && report.staff.toLowerCase() === userEmail.toLowerCase()) {
+          found = true;
+          const li = document.createElement('li');
+          li.style.padding = '10px 0';
+          li.style.borderBottom = '1px solid #e0e0e0';
+          li.style.cursor = 'pointer';
+          li.innerHTML = `<strong>From:</strong> ${report.reportedBy || ''} <br><strong>Issue:</strong> ${report.issue || ''}`;
+          li.onclick = function() {
+            sessionStorage.setItem('selectedReportIdx', idx);
+            window.location.href = 'modal2.html';
+          };
+          notifList.appendChild(li);
+        }
+      });
+      if (!found) {
+        notifList.innerHTML = '<li style="color:#888;">No assigned reports.</li>';
+      }
+      document.getElementById('notifModal').style.display = 'flex';
+    });
+
+    // Close notification modal
+    document.getElementById('closeNotifModal').addEventListener('click', function() {
+      document.getElementById('notifModal').style.display = 'none';
+    });
+
+    // Optional: Close modal when clicking outside the content
+    document.getElementById('notifModal').addEventListener('click', function(e) {
+      if (e.target === this) this.style.display = 'none';
+    });
+    // Notification logic: show badge if logged-in user has a task assigned
+    function updateNotification() {
+      const reports = JSON.parse(localStorage.getItem('helpdeskReports') || '[]');
+      const userEmail = sessionStorage.getItem('userEmail');
+      let hasTask = false;
+      for (const report of reports) {
+        if (report.staff && userEmail && report.staff.toLowerCase() === userEmail.toLowerCase()) {
+          hasTask = true;
+          break;
+        }
+      }
+      var notifBadge = document.getElementById('notifBadge');
+      if (notifBadge) notifBadge.style.display = hasTask ? 'block' : 'none';
+    }
+    window.addEventListener('DOMContentLoaded', updateNotification);
+    // Also update notification when reports are loaded
+    window.addEventListener('DOMContentLoaded', function() {
+      if (typeof loadReports === 'function') updateNotification();
+    });
+    // Load reports from localStorage and display in table
+    function loadReports() {
+      const reports = JSON.parse(localStorage.getItem('helpdeskReports') || '[]');
+      const tbody = document.getElementById('reportTableBody');
+      tbody.innerHTML = '';
+      reports.forEach(function(report, idx) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${idx + 1}</td>
+          <td>ISSUE-${1000 + idx}</td>
+          <td>${report.issue || ''}</td>
+          <td>${report.description || ''}</td>
+          <td>${report.reportedBy || ''}</td>
+          <td>${report.resolution || ''}</td>
+          <td>${report.department || ''}</td>
+          <td>${report.staff || ''}</td>
+          <td>${report.status || ''}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    window.addEventListener('DOMContentLoaded', loadReports);
     // populate navbar user display from sessionStorage
     (function(){
       try {
