@@ -8,7 +8,7 @@
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:Arial,Helvetica,sans-serif;background:#ffffff;color:#111}
 
-    /* navbar (preserve user's existing look) */
+    /* navbar */
     .navbar{display:flex;justify-content:space-between;align-items:center;background:#fafafa;padding:12px 22px;border-bottom:1px solid #ececec}
     .navbar-left{display:flex;align-items:center;gap:14px}
     .navbar-left img{height:48px}
@@ -34,15 +34,14 @@
     .cta .btn{display:inline-block;background:#22a7f0;color:#fff;width: 23%;padding:5px 20px;border-radius:10px;text-decoration:none}
 
     .figure{display:flex;flex-direction:column;align-items:center;gap:18px}
-    /* .figure img{width:280px;max-width:100%;height:auto;border-radius:8px;box-shadow:0 12px 30px rgba(0,0,0,0.06);transform-origin:center;animation:float 2.2s ease-in-out infinite} */
     .actions{display:flex;gap:12px}
     .pill{background:#22a7f0;color:#fff;padding:10px 14px;border-radius:18px;border:0}
 
     @keyframes float{0%{transform:translateY(0)}50%{transform:translateY(-10px)}100%{transform:translateY(0)}}
     @keyframes reveal{to{opacity:1;transform:none}}
 
-    /* precise spacing to match screenshot layout */
-    .cta{border-radius:34px;padding-left:42px;padding-right:42px;margin-top: 85px;margin-left: 80px;}
+    /* precise spacing */
+    .cta{border-radius:34px;padding-left:42px;padding-right:42px;margin-top: 85px;margin-left: 0;}
     .cta h2{font-size:22px}
 
     /* responsive */
@@ -59,8 +58,6 @@
     .search{border-radius:18px}
     .search input::placeholder{color:#7b8794}
     .pill:first-child{background:#1ea1f0}
-
-
   </style>
 </head>
 <body>
@@ -118,34 +115,35 @@
           </div>
           <button class="pill">See More</button>
         </div>
-
-        <div style="margin-top:38px;overflow-x:auto;">
-          <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:16px;box-shadow:0 2px 16px rgba(34,167,240,0.07);">
-            <thead style="background:#f3f8fc;">
-              <tr>
-                <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">S/N</th>
-                <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Issue no</th>
-                <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Issue reported</th>
-                <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Issue description</th>
-                <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Date reported</th>
-                <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Time reported</th>
-                <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Reported by</th>
-                <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Branch</th>
-                <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Resolution path</th>
-                <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Department</th>
-                <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Staff assigned</th>
-                <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Status</th>
-                <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Resolution time</th>
-                <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Date closed</th>
-              </tr>
-            </thead>
-            <tbody id="reportTableBody">
-              <!-- Report rows will appear here -->
-            </tbody>
-          </table>
-        </div>
       </div>
     </section>
+
+    <!-- Table now sits BELOW the grid, full width -->
+    <div style="margin-top:38px;overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:16px;box-shadow:0 2px 16px rgba(34,167,240,0.07);">
+        <thead style="background:#f3f8fc;">
+          <tr>
+            <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">S/N</th>
+            <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Issue no</th>
+            <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Issue reported</th>
+            <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Issue description</th>
+            <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Date reported</th>
+            <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Time reported</th>
+            <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Reported by</th>
+            <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Branch</th>
+            <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Resolution path</th>
+            <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Department</th>
+            <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Staff assigned</th>
+            <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Status</th>
+            <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Resolution time</th>
+            <th style="padding:12px 10px;font-weight:600;color:#22a7f0;">Date closed</th>
+          </tr>
+        </thead>
+        <tbody id="reportTableBody">
+          <!-- Report rows will appear here -->
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <script>
@@ -176,12 +174,10 @@
         filterDropdown.style.display = 'none';
       }
     });
-    // Optionally, handle filter selection
     filterDropdown.querySelectorAll('button').forEach(btn => {
       btn.onclick = function() {
         filterDropdown.style.display = 'none';
         filterLabel.textContent = btn.getAttribute('data-filter');
-        // You can add filter logic here
       };
     });
 
@@ -219,7 +215,6 @@
     // Logout button logic
     userDropdown.querySelector('button').onclick = function() {
       userDropdown.style.display = 'none';
-      // Clear session and redirect to login
       sessionStorage.clear();
       window.location.href = 'login.html';
     };
