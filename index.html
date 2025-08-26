@@ -96,7 +96,15 @@
       <div class="figure">
         <img src="question.png" alt="Question illustration">
         <div class="actions">
-          <button class="pill">Filter Name ▾</button>
+          <div style="position:relative;">
+            <button class="pill" id="filterBtn"><span id="filterLabel">Filter Name</span> ▾</button>
+            <div id="filterDropdown" style="display:none;position:absolute;top:44px;left:0;min-width:180px;background:#fff;border-radius:12px;box-shadow:0 4px 18px rgba(34,167,240,0.13);padding:8px 0;z-index:10;">
+              <button class="pill" style="width:100%;background:none;color:#072544;text-align:left;padding:10px 18px;box-shadow:none;" data-filter="Unanswered">Unanswered</button>
+              <button class="pill" style="width:100%;background:none;color:#072544;text-align:left;padding:10px 18px;box-shadow:none;" data-filter="Assigned to me">Assigned to me</button>
+              <button class="pill" style="width:100%;background:none;color:#072544;text-align:left;padding:10px 18px;box-shadow:none;" data-filter="All reports">All reports</button>
+              <button class="pill" style="width:100%;background:none;color:#072544;text-align:left;padding:10px 18px;box-shadow:none;" data-filter="Assigned to others">Assigned to others</button>
+            </div>
+          </div>
           <button class="pill">See More</button>
         </div>
       </div>
@@ -116,6 +124,28 @@
         }
       } catch (e) { /* ignore */ }
     })();
+
+    // Dropdown logic for filter button
+    const filterBtn = document.getElementById('filterBtn');
+    const filterDropdown = document.getElementById('filterDropdown');
+    const filterLabel = document.getElementById('filterLabel');
+    filterBtn.onclick = function(e) {
+      e.stopPropagation();
+      filterDropdown.style.display = filterDropdown.style.display === 'block' ? 'none' : 'block';
+    };
+    document.addEventListener('click', function(e) {
+      if (!filterDropdown.contains(e.target) && e.target !== filterBtn) {
+        filterDropdown.style.display = 'none';
+      }
+    });
+    // Optionally, handle filter selection
+    filterDropdown.querySelectorAll('button').forEach(btn => {
+      btn.onclick = function() {
+        filterDropdown.style.display = 'none';
+        filterLabel.textContent = btn.getAttribute('data-filter');
+        // You can add filter logic here
+      };
+    });
   </script>
 
 </body>
