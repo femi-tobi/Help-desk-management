@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Department Admin Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+    .container { max-width: 1100px; margin: 40px auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.12); padding: 32px 28px 24px 28px; }
+    h2 { text-align: center; margin-bottom: 24px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; }
+    th, td { padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: left; }
+    th { background: #f3f8fc; color: #22a7f0; font-weight: 600; }
+    tr:last-child td { border-bottom: none; }
+    .btn { background: #22a7f0; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 8px; }
+    .btn:hover { background: #1780b8; }
+    .add-user-form { margin-bottom: 24px; }
+    .add-user-form input, .add-user-form select { padding: 6px 10px; margin-right: 8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Department Admin Dashboard</h2>
+    <form class="add-user-form" id="addUserForm">
+      <input type="email" id="newUserEmail" placeholder="User Email" required />
+      <select id="newUserRole">
+        <option value="user">User</option>
+      </select>
+      <button type="submit" class="btn">Add User to Department</button>
+    </form>
+    <h3>Department Users</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="deptUsersBody"></tbody>
+    </table>
+    <h3>Department Reports</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Issue</th>
+          <th>Description</th>
+          <th>Assigned To</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="deptReportsBody"></tbody>
+    </table>
+  </div>
+  <script>
+    // Load department from sessionStorage (set on login)
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+    const department = currentUser.department;
+    // Load users and reports from localStorage
+    function getUsers() {
+      return JSON.parse(localStorage.getItem('helpdeskUsers') || '[]');
+    }
+    function setUsers(users) {
+      localStorage.setItem('helpdeskUsers', JSON.stringify(users));
+    }
+    function getReports() {
+      return JSON.parse(localStorage.getItem('helpdeskReports') || '[]');
+    }
+    function setReports(reports) {
+      localStorage.setItem('helpdeskReports', JSON.stringify(reports));
+    }
+    // Add user to department
+    document.getElementById('addUserForm').onsubmit = function(e) {
+      e.preventDefault();
+      const email = document.getElementById('newUserEmail').value.trim().toLowerCase();
+      if (!email) return;
+      let users = getUsers();
+      if (users.find(u => u.email === email)) {
+        alert('User already exists!');
+        return;
+      }
+      users.push({ email, role: 'user', department });
+      setUsers(users);
+      loadDeptUsers();
+      document.getElementById('addUserForm').reset();
+    };
+    // Load department users
+    function loadDeptUsers() {
+      const users = getUsers().filter(u => u.department === department);
+      const tbody = document.getElementById('deptUsersBody');
+      tbody.innerHTML = '';
+      users.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${u.email}</td><td>${u.role}</td><td></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+    // Load department reports
+    function loadDeptReports() {
+      const reports = getReports().filter(r => r.department === department);
+      const users = getUsers().filter(u => u.department === department);
+      const tbody = document.getElementById('deptReportsBody');
+      tbody.innerHTML = '';
+      reports.forEach((r, idx) => {
+        const tr = document.createElement('tr');
+        let userOptions = users.map(u => `<option value="${u.email}" ${r.staff === u.email ? 'selected' : ''}>${u.email}</option>`).join('');
+        tr.innerHTML = `
+          <td>${r.issue}</td>
+          <td>${r.description}</td>
+          <td><select data-idx="${idx}" class="reassignSelect">${userOptions}</select></td>
+          <td>${r.status || ''}</td>
+          <td></td>
+        `;
+        tbody.appendChild(tr);
+      });
+      // Add event listeners for reassign
+      document.querySelectorAll('.reassignSelect').forEach(sel => {
+        sel.onchange = function() {
+          const idx = this.getAttribute('data-idx');
+          let reports = getReports().filter(r => r.department === department);
+          let allReports = getReports();
+          const report = reports[idx];
+          if (report) {
+            report.staff = this.value;
+            // Update in allReports
+            const globalIdx = allReports.findIndex(r => r.issue === report.issue && r.department === report.department);
+            if (globalIdx !== -1) allReports[globalIdx] = report;
+            setReports(allReports);
+            loadDeptReports();
+          }
+        };
+      });
+    }
+    window.addEventListener('DOMContentLoaded', function() {
+      loadDeptUsers();
+      loadDeptReports();
+    });
+  </script>
+</body>
+</html>

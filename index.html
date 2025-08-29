@@ -4,6 +4,76 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Report a problem</title>
+  <!-- AI Chat Widget Styles -->
+  <style>
+    #aiChatWidget {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 340px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+      z-index: 9999;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #aiChatHeader {
+      background: #22a7f0;
+      color: #fff;
+      padding: 10px 16px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    #aiChatBody {
+      padding: 12px;
+      height: 220px;
+      overflow-y: auto;
+      background: #f8fafd;
+      font-size: 15px;
+    }
+    #aiChatInputArea {
+      display: flex;
+      border-top: 1px solid #e0e0e0;
+      background: #fff;
+    }
+    #aiChatInput {
+      flex: 1;
+      border: none;
+      padding: 10px;
+      font-size: 15px;
+      outline: none;
+      background: #f4f4f4;
+    }
+    #aiChatSendBtn {
+      background: #22a7f0;
+      color: #fff;
+      border: none;
+      padding: 0 18px;
+      font-size: 15px;
+      cursor: pointer;
+      border-radius: 0 0 10px 0;
+    }
+    #aiChatCloseBtn {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    #aiChatWidget.minimized #aiChatBody, #aiChatWidget.minimized #aiChatInputArea {
+      display: none;
+    }
+    #aiChatWidget.minimized {
+      width: 180px;
+      height: auto;
+    }
+  </style>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:Arial,Helvetica,sans-serif;background:#ffffff;color:#111}
@@ -78,7 +148,8 @@
       </div>
     </div>
     <div class="navbar-right">
-      <button class="nav-cta"><a href="reports.html">Reports</a></button>
+  <button class="nav-cta"><a href="reports.html">Reports</a></button>
+  <button class="nav-cta" id="adminDashBtn" style="display:none;">Admin Dashboard</button>
       <button class="nav-cta" id="notifBtn" style="background:none;padding:0;border:none;box-shadow:none;cursor:pointer;position:relative;">
         <svg id="notifBell" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;">
           <path d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 002 2zm6-6V11c0-3.07-1.63-5.64-4.5-6.32V4a1.5 1.5 0 00-3 0v.68C7.63 5.36 6 7.92 6 11v5l-1.7 1.7A1 1 0 005 20h14a1 1 0 00.7-1.7L18 16z" stroke="#22a7f0" stroke-width="2" fill="none"/>
@@ -150,6 +221,16 @@
   </div>
 
   <script>
+    // Show Admin Dashboard button if user is admin
+    (function() {
+      let currentUser = null;
+      try { currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}'); } catch(e) {}
+      if (currentUser && currentUser.role === 'admin') {
+        var btn = document.getElementById('adminDashBtn');
+        if (btn) btn.style.display = '';
+        if (btn) btn.onclick = function() { window.location.href = 'admin.html'; };
+      }
+    })();
     // Show notification modal with assigned reports
     document.getElementById('notifBtn').addEventListener('click', function(e) {
       e.stopPropagation();
@@ -324,4 +405,113 @@
 </script>
 
 </body>
+  <!-- AI Chat Widget -->
+  <div id="aiChatWidget" class="minimized">
+    <div id="aiChatHeader">
+      <span>May & Baker AI</span>
+      <button id="aiChatCloseBtn" title="Close">×</button>
+    </div>
+    <div id="aiChatBody" style="display:none;"></div>
+    <div id="aiChatInputArea" style="display:none;">
+      <input type="text" id="aiChatInput" placeholder="Ask me anything..." autocomplete="off" />
+      <button id="aiChatSendBtn">Send</button>
+    </div>
+  </div>
+
+  <script>
+    // AI Chat Widget Logic (Hugging Face Inference API)
+    (function() {
+      const widget = document.getElementById('aiChatWidget');
+      const header = document.getElementById('aiChatHeader');
+      const closeBtn = document.getElementById('aiChatCloseBtn');
+      const body = document.getElementById('aiChatBody');
+      const inputArea = document.getElementById('aiChatInputArea');
+      const input = document.getElementById('aiChatInput');
+      const sendBtn = document.getElementById('aiChatSendBtn');
+      let minimized = true;
+
+      function toggleWidget() {
+        minimized = !minimized;
+        if (minimized) {
+          widget.classList.add('minimized');
+          body.style.display = 'none';
+          inputArea.style.display = 'none';
+        } else {
+          widget.classList.remove('minimized');
+          body.style.display = 'block';
+          inputArea.style.display = 'flex';
+          input.focus();
+        }
+      }
+      header.onclick = function(e) {
+        if (e.target === closeBtn) return;
+        toggleWidget();
+      };
+      closeBtn.onclick = function(e) {
+        widget.style.display = 'none';
+        e.stopPropagation();
+      };
+      // Show on load (minimized)
+      widget.classList.add('minimized');
+      body.style.display = 'none';
+      inputArea.style.display = 'none';
+
+      // Chat logic
+      function appendMessage(sender, text) {
+        const msg = document.createElement('div');
+        msg.style.marginBottom = '8px';
+        msg.innerHTML = `<b style="color:${sender==='AI'?'#22a7f0':'#333'};">${sender}:</b> <span>${text.replace(/\n/g,'<br>')}</span>`;
+        body.appendChild(msg);
+        body.scrollTop = body.scrollHeight;
+      }
+      async function sendToAI(message) {
+        appendMessage('You', message);
+        appendMessage('AI', '<i>Thinking...</i>');
+        body.scrollTop = body.scrollHeight;
+        // Hugging Face Inference API (replace with your own key and model)
+        const HF_API_TOKEN = 'YOUR_HF_API_KEY'; // <-- Replace with your Hugging Face API key
+        const HF_MODEL = 'microsoft/DialoGPT-medium'; // Free conversational model
+        try {
+          const res = await fetch(`https://api-inference.huggingface.co/models/${HF_MODEL}`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${HF_API_TOKEN}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ inputs: message })
+          });
+          const data = await res.json();
+          // Remove "Thinking..." message
+          const aiMsgs = body.querySelectorAll('b');
+          for (let i = aiMsgs.length - 1; i >= 0; i--) {
+            if (aiMsgs[i].textContent === 'AI:') {
+              aiMsgs[i].parentElement.remove();
+              break;
+            }
+          }
+          if (data && data.generated_text) {
+            appendMessage('AI', data.generated_text);
+          } else if (data && Array.isArray(data) && data[0] && data[0].generated_text) {
+            appendMessage('AI', data[0].generated_text);
+          } else if (data && data.error) {
+            appendMessage('AI', `<span style='color:red;'>${data.error}</span>`);
+          } else {
+            appendMessage('AI', '<span style="color:red;">No response from AI.</span>');
+          }
+        } catch (e) {
+          appendMessage('AI', `<span style='color:red;'>Error: ${e.message}</span>`);
+        }
+      }
+      function handleSend() {
+        const msg = input.value.trim();
+        if (!msg) return;
+        input.value = '';
+        sendToAI(msg);
+      }
+      sendBtn.onclick = handleSend;
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') handleSend();
+      });
+    })();
+  </script>
 </html>

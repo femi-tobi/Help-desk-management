@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Admin Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+    .container { max-width: 1200px; margin: 40px auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.12); padding: 32px 28px 24px 28px; }
+    h2 { text-align: center; margin-bottom: 24px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; }
+    th, td { padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: left; }
+    th { background: #f3f8fc; color: #22a7f0; font-weight: 600; }
+    tr:last-child td { border-bottom: none; }
+    .btn { background: #22a7f0; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 8px; }
+    .btn:hover { background: #1780b8; }
+    .add-user-form { margin-bottom: 24px; }
+    .add-user-form input, .add-user-form select { padding: 6px 10px; margin-right: 8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+  <button class="btn" id="clearReportsBtn" style="float:right;margin-bottom:16px;">Clear All Reports</button>
+    <h2>Super Admin Dashboard</h2>
+    <form class="add-user-form" id="addUserForm">
+      <input type="email" id="newUserEmail" placeholder="User Email" required />
+      <select id="newUserRole">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </select>
+      <input type="text" id="newUserDept" placeholder="Department" required />
+      <button type="submit" class="btn">Add User</button>
+    </form>
+    <h3>All Users</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Department</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="allUsersBody"></tbody>
+    </table>
+    <h3>All Reports</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Issue</th>
+          <th>Description</th>
+          <th>Department</th>
+          <th>Assigned To</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="allReportsBody"></tbody>
+    </table>
+  </div>
+  <script>
+    // Clear all reports
+    document.getElementById('clearReportsBtn').onclick = function() {
+      if (confirm('Are you sure you want to delete all reports?')) {
+        localStorage.removeItem('helpdeskReports');
+        loadAllReports();
+      }
+    };
+    // Pre-populate example users if not already present
+    (function() {
+      let users = [];
+      try { users = JSON.parse(localStorage.getItem('helpdeskUsers') || '[]'); } catch(e) {}
+      if (!users.length) {
+        users = [
+          { email: 'md@company.com', role: 'superadmin', department: 'Management' },
+          { email: 'admin.is@company.com', role: 'admin', department: 'IS' },
+          { email: 'admin.finance@company.com', role: 'admin', department: 'Finance' },
+          { email: 'admin.ppd@company.com', role: 'admin', department: 'PPD' },
+          { email: 'user1@company.com', role: 'user', department: 'IS' },
+          { email: 'user2@company.com', role: 'user', department: 'Finance' }
+        ];
+        localStorage.setItem('helpdeskUsers', JSON.stringify(users));
+      }
+    })();
+    // Load users and reports from localStorage
+    function getUsers() {
+      return JSON.parse(localStorage.getItem('helpdeskUsers') || '[]');
+    }
+    function setUsers(users) {
+      localStorage.setItem('helpdeskUsers', JSON.stringify(users));
+    }
+    function getReports() {
+      return JSON.parse(localStorage.getItem('helpdeskReports') || '[]');
+    }
+    function setReports(reports) {
+      localStorage.setItem('helpdeskReports', JSON.stringify(reports));
+    }
+    // Add user
+    document.getElementById('addUserForm').onsubmit = function(e) {
+      e.preventDefault();
+      const email = document.getElementById('newUserEmail').value.trim().toLowerCase();
+      const role = document.getElementById('newUserRole').value;
+      const department = document.getElementById('newUserDept').value.trim();
+      if (!email || !department) return;
+      let users = getUsers();
+      if (users.find(u => u.email === email)) {
+        alert('User already exists!');
+        return;
+      }
+      users.push({ email, role, department });
+      setUsers(users);
+      loadAllUsers();
+      document.getElementById('addUserForm').reset();
+    };
+    // Load all users
+    function loadAllUsers() {
+      const users = getUsers();
+      const tbody = document.getElementById('allUsersBody');
+      tbody.innerHTML = '';
+      users.forEach((u, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${u.email}</td><td><select data-idx="${idx}" class="roleSelect"><option value="user" ${u.role==='user'?'selected':''}>User</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select></td><td>${u.department}</td><td></td>`;
+        tbody.appendChild(tr);
+      });
+      // Role change
+      document.querySelectorAll('.roleSelect').forEach(sel => {
+        sel.onchange = function() {
+          const idx = this.getAttribute('data-idx');
+          let users = getUsers();
+          users[idx].role = this.value;
+          setUsers(users);
+          loadAllUsers();
+        };
+      });
+    }
+    // Load all reports with role-based filtering
+    function loadAllReports() {
+      const reports = getReports();
+      const users = getUsers();
+      const tbody = document.getElementById('allReportsBody');
+      tbody.innerHTML = '';
+      // Get current user from sessionStorage
+      let currentUser = null;
+      try { currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}'); } catch(e) {}
+      let filteredReports = reports;
+      if (currentUser && currentUser.role === 'admin') {
+        filteredReports = reports.filter(r => r.department === currentUser.department);
+      } else if (currentUser && currentUser.role === 'user') {
+        filteredReports = reports.filter(r => r.department === currentUser.department);
+      }
+      filteredReports.forEach((r, idx) => {
+        let deptUsers = users.filter(u => u.department === r.department);
+        // Only superadmin and admin can reassign, and only if not resolved
+        let canReassign = (currentUser && (currentUser.role === 'superadmin' || (currentUser.role === 'admin' && r.department === currentUser.department)) && r.status !== 'resolved');
+        let userOptions = deptUsers.map(u => `<option value="${u.email}" ${r.staff === u.email ? 'selected' : ''}>${u.email}</option>`).join('');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.issue}</td>
+          <td>${r.description}</td>
+          <td>${r.department}</td>
+          <td>${canReassign ? `<select data-idx="${reports.indexOf(r)}" class="reassignSelect">${userOptions}</select>` : (r.staff || '')}</td>
+          <td>${r.status || ''}</td>
+          <td></td>
+        `;
+        tbody.appendChild(tr);
+      });
+      // Add event listeners for reassign
+      document.querySelectorAll('.reassignSelect').forEach(sel => {
+        sel.onchange = function() {
+          const idx = this.getAttribute('data-idx');
+          let reports = getReports();
+          const report = reports[idx];
+          if (report) {
+            report.staff = this.value;
+            setReports(reports);
+            loadAllReports();
+          }
+        };
+      });
+    }
+    window.addEventListener('DOMContentLoaded', function() {
+      loadAllUsers();
+      loadAllReports();
+    });
+  </script>
+</body>
+</html>

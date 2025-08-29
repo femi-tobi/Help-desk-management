@@ -29,20 +29,32 @@
     <script>
         function handleLogin(event) {
             event.preventDefault();
-
-            const email = document.getElementById('email').value;
-
+            const email = document.getElementById('email').value.trim().toLowerCase();
             if (email) {
                 // store the email so other pages (navbar) can read it
                 try { sessionStorage.setItem('userEmail', email); } catch(e) { /* ignore if storage blocked */ }
 
-                const btn = document.querySelector('.btn');
-                btn.textContent = 'Submitting...';
-                btn.disabled = true;
-
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 700);
+                // Find user in localStorage
+                let users = [];
+                try { users = JSON.parse(localStorage.getItem('helpdeskUsers') || '[]'); } catch(e) {}
+                const user = users.find(u => u.email === email);
+                if (user) {
+                    sessionStorage.setItem('currentUser', JSON.stringify(user));
+                    const btn = document.querySelector('.btn');
+                    btn.textContent = 'Submitting...';
+                    btn.disabled = true;
+                    setTimeout(() => {
+                        if (user.role === 'superadmin') {
+                            window.location.href = 'superadmin.html';
+                        } else if (user.role === 'admin') {
+                            window.location.href = 'admin.html';
+                        } else {
+                            window.location.href = 'index.html';
+                        }
+                    }, 700);
+                } else {
+                    alert('User not found. Please contact your administrator.');
+                }
             }
         }
     </script>
