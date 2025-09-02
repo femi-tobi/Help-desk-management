@@ -135,9 +135,6 @@
                                 <label for="department">Department</label>
                                 <select id="department" name="department" required onchange="updateStaffOptions()">
                                     <option value="">Select department</option>
-                                    <option value="is">IS</option>
-                                    <option value="finance">Finance</option>
-                                    <option value="ppd">PPD</option>
                                 </select>
                             </div>
                         </div>
@@ -172,25 +169,48 @@
                 }
             } catch (e) { /* ignore */ }
         })();
-                    // Example staff per department
-                    const staffByDept = {
-                        is: ["ayo.is@email.com", "bola.is@email.com", "chidi.is@email.com"],
-                        finance: ["ada.finance@email.com", "kunle.finance@email.com"],
-                        ppd: ["tunde.ppd@email.com", "ngozi.ppd@email.com"]
-                    };
+                    // Dynamically populate departments and staff from helpdeskUsers (managed by superadmin)
+                    function getHelpdeskUsers() {
+                        try {
+                            return JSON.parse(localStorage.getItem('helpdeskUsers') || '[]');
+                        } catch (e) { return []; }
+                    }
+                    function populateDepartments() {
+                        const users = getHelpdeskUsers();
+                        const deptSet = new Set();
+                        users.forEach(u => {
+                            if (u.department && u.department.trim()) deptSet.add(u.department);
+                        });
+                        const deptSelect = document.getElementById('department');
+                        const current = deptSelect.value;
+                        deptSelect.innerHTML = '<option value="">Select department</option>';
+                        Array.from(deptSet).forEach(dept => {
+                            const opt = document.createElement('option');
+                            opt.value = dept;
+                            opt.textContent = dept;
+                            deptSelect.appendChild(opt);
+                        });
+                        if (current && deptSet.has(current)) deptSelect.value = current;
+                    }
                     function updateStaffOptions() {
                         const dept = document.getElementById('department').value;
                         const staffSelect = document.getElementById('staff');
                         staffSelect.innerHTML = '<option value="">Select staff</option>';
-                        if (staffByDept[dept]) {
-                            staffByDept[dept].forEach(function(name) {
-                                const opt = document.createElement('option');
-                                opt.value = name;
-                                opt.textContent = name;
-                                staffSelect.appendChild(opt);
-                            });
-                        }
+                        if (!dept) return;
+                        const users = getHelpdeskUsers();
+                        users.filter(u => u.department === dept).forEach(u => {
+                            const opt = document.createElement('option');
+                            opt.value = u.email;
+                            opt.textContent = u.email;
+                            staffSelect.appendChild(opt);
+                        });
                     }
+                    // Populate departments and staff on load
+                    window.addEventListener('DOMContentLoaded', function() {
+                        populateDepartments();
+                        updateStaffOptions();
+                        document.getElementById('department').addEventListener('change', updateStaffOptions);
+                    });
                     function handleReport(event) {
                             event.preventDefault();
                             // Gather form data
