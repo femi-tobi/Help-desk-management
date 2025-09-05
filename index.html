@@ -419,7 +419,7 @@
   </div>
 
   <script>
-    // AI Chat Widget Logic (Hugging Face Inference API)
+    // AI Chat Widget Logic (Backend API)
     (function() {
       const widget = document.getElementById('aiChatWidget');
       const header = document.getElementById('aiChatHeader');
@@ -468,19 +468,17 @@
         appendMessage('You', message);
         appendMessage('AI', '<i>Thinking...</i>');
         body.scrollTop = body.scrollHeight;
-        // Hugging Face Inference API (replace with your own key and model)
-        const HF_API_TOKEN = 'YOUR_HF_API_KEY'; // <-- Replace with your Hugging Face API key
-        const HF_MODEL = 'microsoft/DialoGPT-medium'; // Free conversational model
+
         try {
-          const res = await fetch(`https://api-inference.huggingface.co/models/${HF_MODEL}`, {
+          // This sends the user's message to your own server at the /api/ai/chat endpoint
+          const response = await fetch('/api/ai/chat', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${HF_API_TOKEN}`,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ inputs: message })
+            body: JSON.stringify({ message: message }),
           });
-          const data = await res.json();
+
           // Remove "Thinking..." message
           const aiMsgs = body.querySelectorAll('b');
           for (let i = aiMsgs.length - 1; i >= 0; i--) {
@@ -489,17 +487,31 @@
               break;
             }
           }
-          if (data && data.generated_text) {
-            appendMessage('AI', data.generated_text);
-          } else if (data && Array.isArray(data) && data[0] && data[0].generated_text) {
-            appendMessage('AI', data[0].generated_text);
-          } else if (data && data.error) {
-            appendMessage('AI', `<span style='color:red;'>${data.error}</span>`);
-          } else {
-            appendMessage('AI', '<span style="color:red;">No response from AI.</span>');
+
+          if (!response.ok) {
+            // Handle errors from your backend (e.g., API key missing, Gemini error)
+            const errorData = await response.json();
+            console.error('Error from backend:', errorData.error);
+            appendMessage('AI', `<span style='color:red;'>Sorry, an error occurred: ${errorData.error}</span>`);
+            return;
           }
-        } catch (e) {
-          appendMessage('AI', `<span style='color:red;'>Error: ${e.message}</span>`);
+
+          const result = await response.json();
+          // The backend now sends back a simple object like { reply: "..." }
+          appendMessage('AI', result.reply);
+
+        } catch (error) {
+          // Remove "Thinking..." message
+          const aiMsgs = body.querySelectorAll('b');
+          for (let i = aiMsgs.length - 1; i >= 0; i--) {
+            if (aiMsgs[i].textContent === 'AI:') {
+              aiMsgs[i].parentElement.remove();
+              break;
+            }
+          }
+          console.error('Failed to send message to backend:', error);
+          // Handle network errors or if the backend is down
+          appendMessage('AI', '<span style="color:red;">Sorry, I could not connect to the AI service.</span>');
         }
       }
       function handleSend() {

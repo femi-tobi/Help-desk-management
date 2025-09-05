@@ -3,15 +3,26 @@ const express = require('express');
 const fetch = require('node-fetch');
 const router = express.Router();
 
-// Replace with your Gemini API key from Google AI Studio
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'YOUR_GEMINI_API_KEY';
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+// It's best practice to load sensitive keys from environment variables.
+// Make sure you have a .env file and are using a package like 'dotenv'
+// in your main server file (e.g., require('dotenv').config();)
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_API_URL_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+
+if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY') {
+  console.error('ERROR: The GEMINI_API_KEY environment variable is not set. The AI chat feature will not work.');
+}
 
 router.post('/chat', async (req, res) => {
+  if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY') {
+    return res.status(500).json({ error: 'The server is missing the Gemini API key.' });
+  }
+
   const { message } = req.body;
   if (!message) return res.status(400).json({ error: 'Message is required' });
+
   try {
-    const geminiRes = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+    const geminiRes = await fetch(`${GEMINI_API_URL_BASE}?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -20,15 +31,25 @@ router.post('/chat', async (req, res) => {
         contents: [{ parts: [{ text: message }] }]
       })
     });
+
     const data = await geminiRes.json();
-    // Gemini returns reply in data.candidates[0].content.parts[0].text
-    if (data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0].text) {
+
+    // Check for an error response from Gemini first
+    if (data.error) {
+      console.error('Gemini API Error:', data.error);
+      return res.status(geminiRes.status).json({ error: `Gemini API Error: ${data.error.message}` });
+    }
+
+    // Check for a valid successful response structure
+    if (data?.candidates?.[0]?.content?.parts?.[0]?.text) {
       res.json({ reply: data.candidates[0].content.parts[0].text });
     } else {
-      res.status(500).json({ error: data.error?.message || 'No response from Gemini AI' });
+      console.error('Unexpected response structure from Gemini:', data);
+      res.status(500).json({ error: 'Received an unexpected response structure from the AI.' });
     }
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Failed to fetch from Gemini API:', err);
+    res.status(500).json({ error: 'An error occurred while communicating with the AI service.' });
   }
 });
 
