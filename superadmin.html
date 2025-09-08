@@ -20,6 +20,8 @@
 </head>
 <body>
   <div class="container">
+  <h3>Recent Actions</h3>
+  <ul id="recentActions" style="background:#f8fafd;padding:16px 18px 12px 18px;border-radius:8px;min-height:48px;list-style:none;margin-bottom:28px;"></ul>
   <button class="btn" id="clearReportsBtn" style="float:right;margin-bottom:16px;">Clear All Reports</button>
     <h2>Super Admin Dashboard</h2>
     <form class="add-user-form" id="addUserForm">
@@ -59,6 +61,29 @@
     </table>
   </div>
   <script>
+    // Helper: get/set actions
+    function getActions() {
+      try { return JSON.parse(localStorage.getItem('helpdeskActions') || '[]'); } catch(e) { return []; }
+    }
+    function setActions(actions) {
+      localStorage.setItem('helpdeskActions', JSON.stringify(actions));
+    }
+    // Show recent actions
+    function loadRecentActions() {
+      const actions = getActions().slice(-10).reverse(); // last 10, newest first
+      const ul = document.getElementById('recentActions');
+      ul.innerHTML = '';
+      if (!actions.length) {
+        ul.innerHTML = '<li style="color:#888;">No recent actions.</li>';
+        return;
+      }
+      actions.forEach(a => {
+        const li = document.createElement('li');
+        li.style.marginBottom = '7px';
+        li.innerHTML = `<span style='color:#22a7f0;font-weight:600;'>${a.actor}</span> <span style='color:#333;'>${a.action}</span> <span style='color:#888;font-size:13px;'>(${a.time})</span>`;
+        ul.appendChild(li);
+      });
+    }
     // Clear all reports
     document.getElementById('clearReportsBtn').onclick = function() {
       if (confirm('Are you sure you want to delete all reports?')) {
@@ -111,6 +136,11 @@
       setUsers(users);
       loadAllUsers();
       document.getElementById('addUserForm').reset();
+  // Log action
+  let actor = (JSON.parse(sessionStorage.getItem('currentUser')||'{}').email) || 'superadmin';
+  let actions = getActions();
+  actions.push({ actor, action: `added user <b>${email}</b> as <b>${role}</b> to <b>${department}</b>`, time: new Date().toLocaleString() });
+  setActions(actions);
     };
     // Load all users
     function loadAllUsers() {
@@ -174,13 +204,19 @@
             report.staff = this.value;
             setReports(reports);
             loadAllReports();
+            // Log action
+            let actor = (JSON.parse(sessionStorage.getItem('currentUser')||'{}').email) || 'superadmin';
+            let actions = getActions();
+            actions.push({ actor, action: `reassigned report <b>${report.issue}</b> to <b>${report.staff}</b> in <b>${report.department}</b>`, time: new Date().toLocaleString() });
+            setActions(actions);
           }
         };
       });
     }
     window.addEventListener('DOMContentLoaded', function() {
-      loadAllUsers();
-      loadAllReports();
+  loadAllUsers();
+  loadAllReports();
+  loadRecentActions();
     });
   </script>
 </body>
