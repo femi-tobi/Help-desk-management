@@ -144,7 +144,7 @@
     <div class="navbar-left">
       <img src="mb.jpeg" alt="logo">
       <div class="site-name"><h3>WELCOME,</h3>
-        <h5>oluwatobi</h5>
+        <h5></h5>
       </div>
     </div>
     <div class="navbar-right">
@@ -225,7 +225,7 @@
     (function() {
       let currentUser = null;
       try { currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}'); } catch(e) {}
-      if (currentUser && currentUser.role === 'admin') {
+      if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin')) {
         var btn = document.getElementById('adminDashBtn');
         if (btn) btn.style.display = '';
         if (btn) btn.onclick = function() { window.location.href = 'admin.html'; };
