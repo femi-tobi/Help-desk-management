@@ -57,6 +57,14 @@
     </table>
   </div>
   <script>
+    // Action logging helper
+    function logAction(action) {
+      const actions = JSON.parse(localStorage.getItem('helpdeskActions') || '[]');
+      const actor = (currentUser && currentUser.email) ? currentUser.email : 'Unknown';
+      const time = new Date().toLocaleString();
+      actions.push({ actor, action, time });
+      localStorage.setItem('helpdeskActions', JSON.stringify(actions));
+    }
     // Load department from sessionStorage (set on login)
     const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
     const department = currentUser.department;
@@ -87,6 +95,7 @@
       setUsers(users);
       loadDeptUsers();
       document.getElementById('addUserForm').reset();
+  logAction(`added user <b>${email}</b> to department <b>${department}</b>`);
     };
     // Load department users
     function loadDeptUsers() {
@@ -124,13 +133,20 @@
           let reports = getReports().filter(r => r.department === department);
           let allReports = getReports();
           const report = reports[idx];
+          const newStaff = this.value;
           if (report) {
-            report.staff = this.value;
-            // Update in allReports
-            const globalIdx = allReports.findIndex(r => r.issue === report.issue && r.department === report.department);
-            if (globalIdx !== -1) allReports[globalIdx] = report;
-            setReports(allReports);
-            loadDeptReports();
+            if (confirm('Are you sure you want to re-assign this task to ' + newStaff + '?')) {
+              report.staff = newStaff;
+              // Update in allReports
+              const globalIdx = allReports.findIndex(r => r.issue === report.issue && r.department === report.department);
+              if (globalIdx !== -1) allReports[globalIdx] = report;
+              setReports(allReports);
+              loadDeptReports();
+              logAction(`reassigned report <b>${report.issue}</b> to <b>${report.staff}</b> in department <b>${department}</b>`);
+            } else {
+              // revert selection
+              this.value = report.staff || '';
+            }
           }
         };
       });
