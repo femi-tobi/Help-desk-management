@@ -20,8 +20,6 @@
 </head>
 <body>
   <div class="container">
-  <h3>Recent Actions</h3>
-  <ul id="recentActions" style="background:#f8fafd;padding:16px 18px 12px 18px;border-radius:8px;min-height:48px;list-style:none;margin-bottom:28px;"></ul>
   <button class="btn" id="clearReportsBtn" style="float:right;margin-bottom:16px;">Clear All Reports</button>
     <h2>Super Admin Dashboard</h2>
     <form class="add-user-form" id="addUserForm">
@@ -29,7 +27,6 @@
       <select id="newUserRole">
         <option value="user">User</option>
         <option value="admin">Admin</option>
-        <option value="superadmin">Super Admin</option>
       </select>
       <input type="text" id="newUserDept" placeholder="Department" required />
       <button type="submit" class="btn">Add User</button>
@@ -62,112 +59,156 @@
     </table>
   </div>
   <script>
-    // Helper: get/set actions
-    function getActions() {
-      try { return JSON.parse(localStorage.getItem('helpdeskActions') || '[]'); } catch(e) { return []; }
-    }
-    function setActions(actions) {
-      localStorage.setItem('helpdeskActions', JSON.stringify(actions));
-    }
-    // Show recent actions
-    function loadRecentActions() {
-      const actions = getActions().slice(-10).reverse(); // last 10, newest first
-      const ul = document.getElementById('recentActions');
-      ul.innerHTML = '';
-      if (!actions.length) {
-        ul.innerHTML = '<li style="color:#888;">No recent actions.</li>';
-        return;
-      }
-      actions.forEach(a => {
-        const li = document.createElement('li');
-        li.style.marginBottom = '7px';
-        li.innerHTML = `<span style='color:#22a7f0;font-weight:600;'>${a.actor}</span> <span style='color:#333;'>${a.action}</span> <span style='color:#888;font-size:13px;'>(${a.time})</span>`;
-        ul.appendChild(li);
-      });
-    }
-    // Clear all reports
-    document.getElementById('clearReportsBtn').onclick = function() {
+    // Clear all reports (still uses localStorage for reports for now)
+    document.getElementById('clearReportsBtn').onclick = async function() {
       if (confirm('Are you sure you want to delete all reports?')) {
-        localStorage.removeItem('helpdeskReports');
-        loadAllReports();
+        try {
+          const response = await fetch('/api/reports/all', {
+            method: 'DELETE',
+          });
+
+          if (response.ok) {
+            alert('All reports deleted successfully!');
+            loadAllReports(); // Reload reports to reflect changes
+          } else {
+            const errorData = await response.json();
+            alert(errorData.message || 'Failed to delete reports.');
+          }
+        } catch (error) {
+          console.error('Error deleting reports:', error);
+          alert('An error occurred while deleting reports.');
+        }
       }
     };
-    // Pre-populate example users if not already present
-    (function() {
-      let users = [];
-      try { users = JSON.parse(localStorage.getItem('helpdeskUsers') || '[]'); } catch(e) {}
-      if (!users.length) {
-        users = [
-          { email: 'md@company.com', role: 'superadmin', department: 'Management' },
-          { email: 'admin.is@company.com', role: 'admin', department: 'IS' },
-          { email: 'admin.finance@company.com', role: 'admin', department: 'Finance' },
-          { email: 'admin.ppd@company.com', role: 'admin', department: 'PPD' },
-          { email: 'user1@company.com', role: 'user', department: 'IS' },
-          { email: 'user2@company.com', role: 'user', department: 'Finance' }
-        ];
-        localStorage.setItem('helpdeskUsers', JSON.stringify(users));
-      }
-    })();
-    // Load users and reports from localStorage
-    function getUsers() {
-      return JSON.parse(localStorage.getItem('helpdeskUsers') || '[]');
+
+    // Load reports from localStorage (for now)
+    async function getReports() {
+      const response = await fetch('/api/reports');
+      return await response.json();
     }
-    function setUsers(users) {
-      localStorage.setItem('helpdeskUsers', JSON.stringify(users));
-    }
-    function getReports() {
-      return JSON.parse(localStorage.getItem('helpdeskReports') || '[]');
-    }
-    function setReports(reports) {
-      localStorage.setItem('helpdeskReports', JSON.stringify(reports));
-    }
+    // setReports function is no longer needed as reports are managed via API
+    // function setReports(reports) {
+    //   localStorage.setItem('helpdeskReports', JSON.stringify(reports));
+    // }
+
     // Add user
-    document.getElementById('addUserForm').onsubmit = function(e) {
+    document.getElementById('addUserForm').onsubmit = async function(e) {
       e.preventDefault();
       const email = document.getElementById('newUserEmail').value.trim().toLowerCase();
       const role = document.getElementById('newUserRole').value;
       const department = document.getElementById('newUserDept').value.trim();
       if (!email || !department) return;
-      let users = getUsers();
-      if (users.find(u => u.email === email)) {
-        alert('User already exists!');
-        return;
-      }
-      users.push({ email, role, department });
-      setUsers(users);
-      loadAllUsers();
-      document.getElementById('addUserForm').reset();
-  // Log action
-  let actor = (JSON.parse(sessionStorage.getItem('currentUser')||'{}').email) || 'superadmin';
-  let actions = getActions();
-  actions.push({ actor, action: `added user <b>${email}</b> as <b>${role}</b> to <b>${department}</b>`, time: new Date().toLocaleString() });
-  setActions(actions);
-    };
-    // Load all users
-    function loadAllUsers() {
-      const users = getUsers();
-      const tbody = document.getElementById('allUsersBody');
-      tbody.innerHTML = '';
-      users.forEach((u, idx) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${u.email}</td><td><select data-idx="${idx}" class="roleSelect"><option value="user" ${u.role==='user'?'selected':''}>User</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option><option value="superadmin" ${u.role==='superadmin'?'selected':''}>Super Admin</option></select></td><td>${u.department}</td><td></td>`;
-        tbody.appendChild(tr);
-      });
-      // Role change
-      document.querySelectorAll('.roleSelect').forEach(sel => {
-        sel.onchange = function() {
-          const idx = this.getAttribute('data-idx');
-          let users = getUsers();
-          users[idx].role = this.value;
-          setUsers(users);
+
+      try {
+        const response = await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, role, department })
+        });
+        const data = await response.json();
+        if (response.ok) {
+          alert(data.message);
           loadAllUsers();
-        };
-      });
+          document.getElementById('addUserForm').reset();
+        } else {
+          alert(data.message || 'Failed to add user');
+        }
+      } catch (error) {
+        console.error('Error adding user:', error);
+        alert('An error occurred while adding user.');
+      }
+    };
+
+    // Load all users from database
+    async function loadAllUsers() {
+      try {
+        const response = await fetch('/api/users');
+        const users = await response.json();
+        const tbody = document.getElementById('allUsersBody');
+        tbody.innerHTML = '';
+        users.forEach(u => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${u.email}</td>
+            <td>
+              <select data-email="${u.email}" class="roleSelect">
+                <option value="user" ${u.role==='user'?'selected':''}>User</option>
+                <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
+                <option value="superadmin" ${u.role==='superadmin'?'selected':''}>Super Admin</option>
+              </select>
+            </td>
+            <td>${u.department}</td>
+            <td><button class="btn delete-user-btn" data-email="${u.email}">Delete</button></td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        // Role change
+        document.querySelectorAll('.roleSelect').forEach(sel => {
+          sel.onchange = async function() {
+            const email = this.getAttribute('data-email');
+            const role = this.value;
+            try {
+              const response = await fetch(`/api/users/${email}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ role })
+              });
+              const data = await response.json();
+              if (response.ok) {
+                alert(data.message);
+              } else {
+                alert(data.message || 'Failed to update role');
+              }
+            } catch (error) {
+              console.error('Error updating role:', error);
+              alert('An error occurred while updating role.');
+            }
+          };
+        });
+
+        // Delete user
+        document.querySelectorAll('.delete-user-btn').forEach(btn => {
+          btn.onclick = async function() {
+            const email = this.getAttribute('data-email');
+            if (confirm(`Are you sure you want to delete user ${email}?`)) {
+              try {
+                const response = await fetch(`/api/users/${email}`, {
+                  method: 'DELETE'
+                });
+                const data = await response.json();
+                if (response.ok) {
+                  alert(data.message);
+                  loadAllUsers(); // Reload users after deletion
+                } else {
+                  alert(data.message || 'Failed to delete user');
+                }
+              } catch (error) {
+                console.error('Error deleting user:', error);
+                alert('An error occurred while deleting user.');
+              }
+            }
+          };
+        });
+
+      } catch (error) {
+        console.error('Error loading users:', error);
+        alert('Failed to load users.');
+      }
     }
-    // Load all reports with role-based filtering
-    function loadAllReports() {
-      const reports = getReports();
-      const users = getUsers();
+
+    // Load all reports with role-based filtering (still uses localStorage for reports for now)
+    async function loadAllReports() {
+      const reports = await getReports();
+      // Fetch users from DB for department filtering
+      let users = [];
+      try {
+        const usersResponse = await fetch('/api/users');
+        users = await usersResponse.json();
+      } catch (error) {
+        console.error('Error fetching users for reports:', error);
+      }
+
       const tbody = document.getElementById('allReportsBody');
       tbody.innerHTML = '';
       // Get current user from sessionStorage
@@ -179,7 +220,7 @@
       } else if (currentUser && currentUser.role === 'user') {
         filteredReports = reports.filter(r => r.department === currentUser.department);
       }
-      filteredReports.forEach((r, idx) => {
+      filteredReports.forEach((r) => {
         let deptUsers = users.filter(u => u.department === r.department);
         // Only superadmin and admin can reassign, and only if not resolved
         let canReassign = (currentUser && (currentUser.role === 'superadmin' || (currentUser.role === 'admin' && r.department === currentUser.department)) && r.status !== 'resolved');
@@ -189,7 +230,7 @@
           <td>${r.issue}</td>
           <td>${r.description}</td>
           <td>${r.department}</td>
-          <td>${canReassign ? `<select data-idx="${reports.indexOf(r)}" class="reassignSelect">${userOptions}</select>` : (r.staff || '')}</td>
+          <td>${canReassign ? `<select data-id="${r.id}" class="reassignSelect">${userOptions}</select>` : (r.staff || '')}</td>
           <td>${r.status || ''}</td>
           <td></td>
         `;
@@ -197,28 +238,49 @@
       });
       // Add event listeners for reassign
       document.querySelectorAll('.reassignSelect').forEach(sel => {
-        sel.onchange = function() {
-          const idx = this.getAttribute('data-idx');
-          let reports = getReports();
-          const report = reports[idx];
-          if (report) {
-            report.staff = this.value;
-            setReports(reports);
-            loadAllReports();
-            // Log action
-            let actor = (JSON.parse(sessionStorage.getItem('currentUser')||'{}').email) || 'superadmin';
-            let actions = getActions();
-            actions.push({ actor, action: `reassigned report <b>${report.issue}</b> to <b>${report.staff}</b> in <b>${report.department}</b>`, time: new Date().toLocaleString() });
-            setActions(actions);
+        sel.onchange = async function() {
+          const reportId = this.getAttribute('data-id');
+          const newStaff = this.value;
+          const allReports = await getReports(); // Re-fetch all reports to get the latest state
+          const reportToUpdate = allReports.find(r => r.id == reportId);
+
+          if (reportToUpdate) {
+            if (confirm('Are you sure you want to re-assign this task to ' + newStaff + '?')) {
+              reportToUpdate.staff = newStaff;
+              try {
+                const response = await fetch(`/api/reports/${reportId}`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(reportToUpdate),
+                });
+
+                if (response.ok) {
+                  alert('Report re-assigned successfully!');
+                  loadAllReports(); // Reload reports to reflect changes
+                } else {
+                  const errorData = await response.json();
+                  alert(errorData.message || 'Failed to re-assign report.');
+                }
+              } catch (error) {
+                console.error('Error re-assigning report:', error);
+                alert('An error occurred while re-assigning the report.');
+              }
+            } else {
+              // revert selection
+              this.value = reportToUpdate.staff || '';
+            }
           }
         };
       });
     }
     window.addEventListener('DOMContentLoaded', function() {
-  loadAllUsers();
-  loadAllReports();
-  loadRecentActions();
+      loadAllUsers();
+      loadAllReports();
     });
+  </script>
   </script>
 </body>
 </html>
+

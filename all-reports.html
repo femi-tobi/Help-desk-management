@@ -44,8 +44,9 @@
     </table>
   </div>
   <script>
-    function loadAllReports() {
-      const reports = JSON.parse(localStorage.getItem('helpdeskReports') || '[]');
+    async function loadAllReports() {
+      const response = await fetch('/api/reports');
+      const reports = await response.json();
       const tbody = document.getElementById('allReportsBody');
       tbody.innerHTML = '';
       reports.forEach(function(report, idx) {

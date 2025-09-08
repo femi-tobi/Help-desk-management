@@ -27,23 +27,31 @@
     </div>
 
     <script>
-        function handleLogin(event) {
+        async function handleLogin(event) {
             event.preventDefault();
             const email = document.getElementById('email').value.trim().toLowerCase();
-            if (email) {
-                // store the email so other pages (navbar) can read it
-                try { sessionStorage.setItem('userEmail', email); } catch(e) { /* ignore if storage blocked */ }
+            const btn = document.querySelector('.btn');
+            btn.textContent = 'Submitting...';
+            btn.disabled = true;
 
-                // Find user in localStorage
-                let users = [];
-                try { users = JSON.parse(localStorage.getItem('helpdeskUsers') || '[]'); } catch(e) {}
-                const user = users.find(u => u.email === email);
-                if (user) {
-                    sessionStorage.setItem('currentUser', JSON.stringify(user));
-                    const btn = document.querySelector('.btn');
-                    btn.textContent = 'Submitting...';
-                    btn.disabled = true;
-                    setTimeout(() => {
+            if (email) {
+                try {
+                    const response = await fetch('/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email }),
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        const user = data.user;
+                        sessionStorage.setItem('userEmail', user.email); // Store email
+                        sessionStorage.setItem('currentUser', JSON.stringify(user)); // Store full user object
+
+                        // Redirect based on role
                         if (user.role === 'superadmin') {
                             window.location.href = 'superadmin.html';
                         } else if (user.role === 'admin') {
@@ -51,10 +59,20 @@
                         } else {
                             window.location.href = 'index.html';
                         }
-                    }, 700);
-                } else {
-                    alert('User not found. Please contact your administrator.');
+                    } else {
+                        alert(data.message || 'Login failed. Please try again.');
+                        btn.textContent = 'Submit';
+                        btn.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Error during login:', error);
+                    alert('An error occurred during login. Please try again later.');
+                    btn.textContent = 'Submit';
+                    btn.disabled = false;
                 }
+            } else {
+                btn.textContent = 'Submit';
+                btn.disabled = false;
             }
         }
     </script>

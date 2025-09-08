@@ -79,7 +79,7 @@
         labels: ['Pending', 'Resolved'],
         datasets: [{
           data: [pending, resolved],
-          backgroundColor: ['#9b8cff', '#ff9696'],
+          backgroundColor: ['#9b8cff', '#ffc0cb'],
         }]
       };
       const pieChart = new Chart(document.getElementById('pieChart').getContext('2d'), {
@@ -101,7 +101,7 @@
         datasets: [{
           label: 'Reports',
           data: Object.values(deptCounts),
-          backgroundColor: '#9b8cff',
+          backgroundColor: '#87ceeb',
         }]
       };
       const barChart = new Chart(document.getElementById('barChart').getContext('2d'), {

@@ -211,7 +211,7 @@
                         updateStaffOptions();
                         document.getElementById('department').addEventListener('change', updateStaffOptions);
                     });
-                    function handleReport(event) {
+                    async function handleReport(event) {
                             event.preventDefault();
                             // Gather form data
                                 const now = new Date();
@@ -221,21 +221,36 @@
                                     branch: document.getElementById('branch').value,
                                     department: document.getElementById('department').value,
                                     staff: document.getElementById('staff').value,
-                                    status: document.getElementById('status') ? document.getElementById('status').value : '',
-                                    resolution: document.getElementById('resolution') ? document.getElementById('resolution').value : '',
+                                    status: 'open', // New reports are always 'open'
+                                    resolution: '',
                                     reportedBy: sessionStorage.getItem('userEmail') || '',
                                     dateReported: now.toLocaleDateString(),
                                     timeReported: now.toLocaleTimeString(),
                                     resolutionTime: '',
                                     dateClosed: ''
                                 };
-                            // Get existing reports from localStorage
-                            let reports = JSON.parse(localStorage.getItem('helpdeskReports') || '[]');
-                            reports.push(report);
-                            localStorage.setItem('helpdeskReports', JSON.stringify(reports));
-                            alert('Report submitted!');
-                            // Optionally, redirect to index.html
-                            window.location.href = 'index.html';
+                            
+                            try {
+                                const response = await fetch('/api/reports', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify(report),
+                                });
+
+                                const data = await response.json();
+
+                                if (response.ok) {
+                                    alert('Report submitted successfully!');
+                                    window.location.href = 'index.html';
+                                } else {
+                                    alert(data.message || 'Failed to submit report.');
+                                }
+                            } catch (error) {
+                                console.error('Error submitting report:', error);
+                                alert('An error occurred while submitting the report.');
+                            }
                     }
                 </script>
  </html>

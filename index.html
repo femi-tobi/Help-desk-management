@@ -270,8 +270,9 @@
       if (e.target === this) this.style.display = 'none';
     });
     // Notification logic: show badge if logged-in user has a task assigned
-    function updateNotification() {
-      const reports = JSON.parse(localStorage.getItem('helpdeskReports') || '[]');
+    async function updateNotification() {
+      const response = await fetch('/api/reports');
+      const reports = await response.json();
       const userEmail = sessionStorage.getItem('userEmail');
       let hasTask = false;
       for (const report of reports) {
@@ -289,8 +290,9 @@
       if (typeof loadReports === 'function') updateNotification();
     });
     // Load reports from localStorage and display in table
-    function loadReports() {
-      const reports = JSON.parse(localStorage.getItem('helpdeskReports') || '[]');
+    async function loadReports() {
+      const response = await fetch('/api/reports');
+      const reports = await response.json();
       const tbody = document.getElementById('reportTableBody');
       tbody.innerHTML = '';
       // Determine filter
