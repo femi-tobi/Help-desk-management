@@ -140,9 +140,18 @@ app.post('/api/reports', (req, res) => {
   );
 });
 
-// API to get all reports
+// API to get all reports, with optional department filter
 app.get('/api/reports', (req, res) => {
-  db.all('SELECT * FROM reports', [], (err, rows) => {
+  const { department } = req.query;
+  let sql = 'SELECT * FROM reports';
+  let params = [];
+
+  if (department) {
+    sql += ' WHERE department = ?';
+    params.push(department);
+  }
+
+  db.all(sql, params, (err, rows) => {
     if (err) {
       console.error('Database error fetching reports:', err.message);
       return res.status(500).json({ message: 'Internal server error' });
@@ -180,6 +189,21 @@ app.put('/api/reports/:id', (req, res) => {
       res.json({ message: 'Report updated successfully' });
     }
   );
+});
+
+// API to get a single report by ID
+app.get('/api/reports/:id', (req, res) => {
+  const { id } = req.params;
+  db.get('SELECT * FROM reports WHERE id = ?', [id], (err, row) => {
+    if (err) {
+      console.error('Database error fetching report by ID:', err.message);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+    if (!row) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+    res.json(row);
+  });
 });
 
 // Debug endpoint to list all users in DB

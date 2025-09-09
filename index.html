@@ -232,14 +232,15 @@
       }
     })();
     // Show notification modal with assigned reports
-    document.getElementById('notifBtn').addEventListener('click', function(e) {
+        document.getElementById('notifBtn').addEventListener('click', async function(e) {
       e.stopPropagation();
-      const reports = JSON.parse(localStorage.getItem('helpdeskReports') || '[]');
+      const response = await fetch('/api/reports');
+      const reports = await response.json();
       const userEmail = sessionStorage.getItem('userEmail');
       const notifList = document.getElementById('notifList');
       notifList.innerHTML = '';
       let found = false;
-      reports.forEach(function(report, idx) {
+      reports.forEach(function(report) {
         if (report.staff && userEmail && report.staff.toLowerCase() === userEmail.toLowerCase()) {
           found = true;
           const li = document.createElement('li');
@@ -248,7 +249,7 @@
           li.style.cursor = 'pointer';
           li.innerHTML = `<strong>From:</strong> ${report.reportedBy || ''} <br><strong>Issue:</strong> ${report.issue || ''}`;
           li.onclick = function() {
-            sessionStorage.setItem('selectedReportIdx', idx);
+            sessionStorage.setItem('selectedReportId', report.id);
             window.location.href = 'modal2.html';
           };
           notifList.appendChild(li);

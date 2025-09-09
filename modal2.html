@@ -168,42 +168,147 @@
                     </form>
                 </div>
 </body>
-   <script>
-        // Load report details for editing
-        document.addEventListener('DOMContentLoaded', function() {
-            const idx = sessionStorage.getItem('selectedReportIdx');
-            if (idx === null) return;
-            const reports = JSON.parse(localStorage.getItem('helpdeskReports') || '[]');
-            const report = reports[idx];
-            if (!report) return;
-            // Fill form fields
-            document.getElementById('issue').value = report.issue || '';
-            document.getElementById('description').value = report.description || '';
-            document.getElementById('branch').value = report.branch || '';
-            document.getElementById('department').value = report.department || '';
-            document.getElementById('staff').innerHTML = `<option value="${report.staff}">${report.staff}</option>`;
-            document.getElementById('status').value = report.status || '';
-            document.getElementById('resolution').value = report.resolution || '';
-            // Make all fields except resolution and status readonly/disabled
-            document.getElementById('issue').readOnly = true;
-            document.getElementById('description').readOnly = true;
-            document.getElementById('branch').disabled = true;
-            document.getElementById('department').disabled = true;
-            document.getElementById('staff').disabled = true;
+      <script>
+        // Populate navbar user display from sessionStorage (copied from index.html)
+        (function(){
+            try {
+                var email = sessionStorage.getItem('userEmail');
+                if (email) {
+                    var h5 = document.querySelector('.site-name h5');
+                    if (h5) h5.textContent = email;
+                    var avatar = document.querySelector('.user-icon');
+                    if (avatar && avatar.textContent.trim() === 'U') avatar.textContent = email.charAt(0).toUpperCase();
+                }
+            } catch (e) { /* ignore */ }
+        })();
+        // Dynamically populate departments and staff from helpdeskUsers (managed by superadmin)
+        function getHelpdeskUsers() {
+            try {
+                return JSON.parse(localStorage.getItem('helpdeskUsers') || '[]');
+            } catch (e) { return []; }
+        }
+        function populateDepartments() {
+            const users = getHelpdeskUsers();
+            const deptSet = new Set();
+            users.forEach(u => {
+                if (u.department && u.department.trim()) deptSet.add(u.department);
+            });
+            const deptSelect = document.getElementById('department');
+            const current = deptSelect.value;
+            deptSelect.innerHTML = '<option value="">Select department</option>';
+            Array.from(deptSet).forEach(dept => {
+                const opt = document.createElement('option');
+                opt.value = dept;
+                opt.textContent = dept;
+                deptSelect.appendChild(opt);
+            });
+            if (current && deptSet.has(current)) deptSelect.value = current;
+        }
+        function updateStaffOptions() {
+            const dept = document.getElementById('department').value;
+            const staffSelect = document.getElementById('staff');
+            staffSelect.innerHTML = '<option value="">Select staff</option>';
+            if (!dept) return;
+            const users = getHelpdeskUsers();
+            users.filter(u => u.department === dept).forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.email;
+                opt.textContent = u.email;
+                staffSelect.appendChild(opt);
+            });
+        }
+        // Populate departments and staff on load
+        window.addEventListener('DOMContentLoaded', function() {
+            populateDepartments();
+            updateStaffOptions();
+            document.getElementById('department').addEventListener('change', updateStaffOptions);
         });
 
-        document.getElementById('reportForm').addEventListener('submit', function(event) {
+        // Load report details for editing
+        document.addEventListener('DOMContentLoaded', async function() {
+            const reportId = sessionStorage.getItem('selectedReportId');
+            if (!reportId) {
+                alert('No report selected.');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/reports/${reportId}`);
+                const report = await response.json();
+
+                if (!response.ok) {
+                    alert(report.message || 'Failed to load report.');
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                // Fill form fields
+                document.getElementById('issue').value = report.issue || '';
+                document.getElementById('description').value = report.description || '';
+                document.getElementById('branch').value = report.branch || '';
+                document.getElementById('department').value = report.department || '';
+                // For staff, populate options and then select
+                await populateDepartments(); // Ensure departments are loaded
+                await updateStaffOptions(); // Ensure staff options are loaded for the department
+                document.getElementById('staff').value = report.staff || ''; // Select the assigned staff
+                document.getElementById('status').value = report.status || '';
+                document.getElementById('resolution').value = report.resolution || '';
+
+                // Make all fields except resolution and status readonly/disabled
+                document.getElementById('issue').readOnly = true;
+                document.getElementById('description').readOnly = true;
+                document.getElementById('branch').disabled = true;
+                document.getElementById('department').disabled = true;
+                document.getElementById('staff').disabled = true;
+            } catch (error) {
+                console.error('Error loading report:', error);
+                alert('An error occurred while loading the report.');
+                window.location.href = 'index.html';
+            }
+        });
+
+        document.getElementById('reportForm').addEventListener('submit', async function(event) {
             event.preventDefault();
-            const idx = sessionStorage.getItem('selectedReportIdx');
-            if (idx === null) return;
-            let reports = JSON.parse(localStorage.getItem('helpdeskReports') || '[]');
-            if (!reports[idx]) return;
+            const reportId = sessionStorage.getItem('selectedReportId');
+            if (!reportId) return;
+
+            // Fetch the current report to get all its fields
+            const response = await fetch(`/api/reports/${reportId}`);
+            const reportToUpdate = await response.json();
+
+            if (!response.ok) {
+                alert(reportToUpdate.message || 'Failed to fetch report for update.');
+                return;
+            }
+
             // Only update resolution and status
-            reports[idx].resolution = document.getElementById('resolution').value;
-            reports[idx].status = document.getElementById('status').value;
-            localStorage.setItem('helpdeskReports', JSON.stringify(reports));
-            alert('Report updated!');
-            window.location.href = 'index.html';
+            reportToUpdate.resolution = document.getElementById('resolution').value;
+            reportToUpdate.status = document.getElementById('status').value;
+            reportToUpdate.resolutionTime = (reportToUpdate.status === 'resolved') ? new Date().toLocaleTimeString() : '';
+            reportToUpdate.dateClosed = (reportToUpdate.status === 'resolved') ? new Date().toLocaleDateString() : '';
+
+            try {
+                const updateResponse = await fetch(`/api/reports/${reportId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(reportToUpdate),
+                });
+
+                const data = await updateResponse.json();
+
+                if (updateResponse.ok) {
+                    alert('Report updated successfully!');
+                    window.location.href = 'index.html';
+                } else {
+                    alert(data.message || 'Failed to update report.');
+                }
+            } catch (error) {
+                console.error('Error updating report:', error);
+                alert('An error occurred while updating the report.');
+            }
         });
    </script>
 </html>
