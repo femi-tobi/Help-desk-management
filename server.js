@@ -126,6 +126,8 @@ app.delete('/api/users/:email', (req, res) => {
 });
 
 // API to create a new report
+const nodemailer = require('nodemailer');
+
 app.post('/api/reports', (req, res) => {
   const { issue, description, branch, department, staff, status, resolution, reportedBy, dateReported, timeReported, resolutionTime, dateClosed } = req.body;
 
@@ -142,6 +144,36 @@ app.post('/api/reports', (req, res) => {
         console.error('Database error adding report:', err.message);
         return res.status(500).json({ message: 'Internal server error' });
       }
+
+      // Send email to assigned staff if staff is present
+      if (staff) {
+        // Setup nodemailer transporter
+        const transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST,
+          port: process.env.SMTP_PORT,
+          secure: process.env.SMTP_SECURE === 'true',
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASSWORD,
+          },
+        });
+
+        const mailOptions = {
+          from: process.env.SMTP_USER,
+          to: staff,
+          subject: `New Helpdesk Request Assigned: ${issue}`,
+          text: `You have been assigned a new helpdesk request.\n\nIssue: ${issue}\nDescription: ${description}\nReported by: ${reportedBy || 'Unknown'}\nDepartment: ${department || 'N/A'}`,
+        };
+
+        transporter.sendMail(mailOptions, (error, info) => {
+          if (error) {
+            console.error('Error sending assignment email:', error);
+          } else {
+            console.log('Assignment email sent:', info.response);
+          }
+        });
+      }
+
       res.status(201).json({ message: 'Report added successfully', id: this.lastID });
     }
   );
@@ -175,6 +207,21 @@ app.delete('/api/reports/all', (req, res) => {
       return res.status(500).json({ message: 'Internal server error' });
     }
     res.json({ message: `Deleted ${this.changes} reports successfully` });
+  });
+});
+
+// API to delete a single report by ID
+app.delete('/api/reports/:id', (req, res) => {
+  const { id } = req.params;
+  db.run('DELETE FROM reports WHERE id = ?', [id], function(err) {
+    if (err) {
+      console.error('Database error deleting report:', err.message);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+    res.json({ message: 'Report deleted successfully' });
   });
 });
 

@@ -222,7 +222,6 @@
       }
       filteredReports.forEach((r) => {
         let deptUsers = users.filter(u => u.department === r.department);
-        // Only superadmin and admin can reassign, and only if not resolved
         let canReassign = (currentUser && (currentUser.role === 'superadmin' || (currentUser.role === 'admin' && r.department === currentUser.department)) && r.status !== 'resolved');
         let userOptions = deptUsers.map(u => `<option value="${u.email}" ${r.staff === u.email ? 'selected' : ''}>${u.email}</option>`).join('');
         const tr = document.createElement('tr');
@@ -232,10 +231,36 @@
           <td>${r.department}</td>
           <td>${canReassign ? `<select data-id="${r.id}" class="reassignSelect">${userOptions}</select>` : (r.staff || '')}</td>
           <td>${r.status || ''}</td>
-          <td></td>
+          <td><button type="button" class="btn deleteReportBtn" data-id="${r.id}">Delete</button></td>
         `;
         tbody.appendChild(tr);
       });
+
+      // Attach event listeners after rendering
+      setTimeout(() => {
+        document.querySelectorAll('.deleteReportBtn').forEach(btn => {
+          btn.onclick = async function() {
+            const reportId = this.getAttribute('data-id');
+            if (confirm('Are you sure you want to delete this report?')) {
+              try {
+                const response = await fetch(`/api/reports/${reportId}`, {
+                  method: 'DELETE',
+                });
+                if (response.ok) {
+                  alert('Report deleted successfully!');
+                  loadAllReports();
+                } else {
+                  const errorData = await response.json();
+                  alert(errorData.message || 'Failed to delete report.');
+                }
+              } catch (error) {
+                console.error('Error deleting report:', error);
+                alert('An error occurred while deleting the report.');
+              }
+            }
+          };
+        });
+      }, 0);
       // Add event listeners for reassign
       document.querySelectorAll('.reassignSelect').forEach(sel => {
         sel.onchange = async function() {
@@ -258,6 +283,29 @@
 
                 if (response.ok) {
                   alert('Report re-assigned successfully!');
+      // Add event listeners for delete buttons
+      document.querySelectorAll('.deleteReportBtn').forEach(btn => {
+        btn.onclick = async function() {
+          const reportId = this.getAttribute('data-id');
+          if (confirm('Are you sure you want to delete this report?')) {
+            try {
+              const response = await fetch(`/api/reports/${reportId}`, {
+                method: 'DELETE',
+              });
+              if (response.ok) {
+                alert('Report deleted successfully!');
+                loadAllReports();
+              } else {
+                const errorData = await response.json();
+                alert(errorData.message || 'Failed to delete report.');
+              }
+            } catch (error) {
+              console.error('Error deleting report:', error);
+              alert('An error occurred while deleting the report.');
+            }
+          }
+        };
+      });
                   loadAllReports(); // Reload reports to reflect changes
                 } else {
                   const errorData = await response.json();
