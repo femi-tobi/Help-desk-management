@@ -169,88 +169,98 @@
                 }
             } catch (e) { /* ignore */ }
         })();
-                    // Dynamically populate departments and staff from helpdeskUsers (managed by superadmin)
-                    function getHelpdeskUsers() {
-                        try {
-                            return JSON.parse(localStorage.getItem('helpdeskUsers') || '[]');
-                        } catch (e) { return []; }
-                    }
-                    function populateDepartments() {
-                        const users = getHelpdeskUsers();
-                        const deptSet = new Set();
-                        users.forEach(u => {
-                            if (u.department && u.department.trim()) deptSet.add(u.department);
-                        });
-                        const deptSelect = document.getElementById('department');
-                        const current = deptSelect.value;
-                        deptSelect.innerHTML = '<option value="">Select department</option>';
-                        Array.from(deptSet).forEach(dept => {
-                            const opt = document.createElement('option');
-                            opt.value = dept;
-                            opt.textContent = dept;
-                            deptSelect.appendChild(opt);
-                        });
-                        if (current && deptSet.has(current)) deptSelect.value = current;
-                    }
-                    function updateStaffOptions() {
-                        const dept = document.getElementById('department').value;
-                        const staffSelect = document.getElementById('staff');
-                        staffSelect.innerHTML = '<option value="">Select staff</option>';
-                        if (!dept) return;
-                        const users = getHelpdeskUsers();
-                        users.filter(u => u.department === dept).forEach(u => {
-                            const opt = document.createElement('option');
-                            opt.value = u.email;
-                            opt.textContent = u.email;
-                            staffSelect.appendChild(opt);
-                        });
-                    }
-                    // Populate departments and staff on load
-                    window.addEventListener('DOMContentLoaded', function() {
-                        populateDepartments();
-                        updateStaffOptions();
-                        document.getElementById('department').addEventListener('change', updateStaffOptions);
-                    });
-                    async function handleReport(event) {
-                            event.preventDefault();
-                            // Gather form data
-                                const now = new Date();
-                                const report = {
-                                    issue: document.getElementById('issue').value,
-                                    description: document.getElementById('description').value,
-                                    branch: document.getElementById('branch').value,
-                                    department: document.getElementById('department').value,
-                                    staff: document.getElementById('staff').value,
-                                    status: 'open', // New reports are always 'open'
-                                    resolution: '',
-                                    reportedBy: sessionStorage.getItem('userEmail') || '',
-                                    dateReported: now.toLocaleDateString(),
-                                    timeReported: now.toLocaleTimeString(),
-                                    resolutionTime: '',
-                                    dateClosed: ''
-                                };
-                            
-                            try {
-                                const response = await fetch('/api/reports', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                    },
-                                    body: JSON.stringify(report),
-                                });
 
-                                const data = await response.json();
+        async function populateDepartments() {
+            try {
+                console.log('Attempting to fetch departments...');
+                const response = await fetch('/api/departments');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const departments = await response.json();
+                console.log('Fetched departments:', departments);
+                const deptSelect = document.getElementById('department');
+                const current = deptSelect.value;
+                deptSelect.innerHTML = '<option value="">Select department</option>';
+                departments.forEach(dept => {
+                    const opt = document.createElement('option');
+                    opt.value = dept;
+                    opt.textContent = dept;
+                    deptSelect.appendChild(opt);
+                });
+                if (current) deptSelect.value = current;
+            } catch (error) {
+                console.error('Error fetching departments:', error);
+                alert('Failed to load departments. Please check the console for more details.');
+            }
+        }
 
-                                if (response.ok) {
-                                    alert('Report submitted successfully!');
-                                    window.location.href = 'index.html';
-                                } else {
-                                    alert(data.message || 'Failed to submit report.');
-                                }
-                            } catch (error) {
-                                console.error('Error submitting report:', error);
-                                alert('An error occurred while submitting the report.');
-                            }
-                    }
-                </script>
+        async function updateStaffOptions() {
+            const dept = document.getElementById('department').value;
+            const staffSelect = document.getElementById('staff');
+            staffSelect.innerHTML = '<option value="">Select staff</option>';
+            if (!dept) return;
+            try {
+                const response = await fetch(`/api/users/department/${dept}`);
+                const users = await response.json();
+                users.forEach(user => {
+                    const opt = document.createElement('option');
+                    opt.value = user.email;
+                    opt.textContent = user.email;
+                    staffSelect.appendChild(opt);
+                });
+            } catch (error) {
+                console.error('Error fetching staff:', error);
+            }
+        }
+
+        // Populate departments and staff on load
+        window.addEventListener('DOMContentLoaded', function() {
+            populateDepartments();
+            updateStaffOptions();
+            document.getElementById('department').addEventListener('change', updateStaffOptions);
+        });
+
+        async function handleReport(event) {
+            event.preventDefault();
+            // Gather form data
+            const now = new Date();
+            const report = {
+                issue: document.getElementById('issue').value,
+                description: document.getElementById('description').value,
+                branch: document.getElementById('branch').value,
+                department: document.getElementById('department').value,
+                staff: document.getElementById('staff').value,
+                status: 'open', // New reports are always 'open'
+                resolution: '',
+                reportedBy: sessionStorage.getItem('userEmail') || '',
+                dateReported: now.toLocaleDateString(),
+                timeReported: now.toLocaleTimeString(),
+                resolutionTime: '',
+                dateClosed: ''
+            };
+
+            try {
+                const response = await fetch('/api/reports', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(report),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('Report submitted successfully!');
+                    window.location.href = 'index.html';
+                } else {
+                    alert(data.message || 'Failed to submit report.');
+                }
+            } catch (error) {
+                console.error('Error submitting report:', error);
+                alert('An error occurred while submitting the report.');
+            }
+        }
+    </script>
  </html>

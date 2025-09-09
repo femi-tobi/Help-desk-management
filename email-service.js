@@ -57,6 +57,43 @@ const openInbox = (imap) => {
 
                         const fromEmail = from.value[0].address;
 
+                        // Check if it's a reply to an assignment email
+                        const replySubjectMatch = subject.match(/Re: New Helpdesk Request Assigned \(ID: (\d+)\):/);
+                        const resolutionKeywords = ['resolved', 'completed', 'fixed', 'done'];
+                        const isResolutionEmail = resolutionKeywords.some(keyword => text.toLowerCase().includes(keyword));
+
+                        if (replySubjectMatch && isResolutionEmail) {
+                            const reportId = replySubjectMatch[1];
+                            console.log(`Detected resolution email for Report ID: ${reportId}`);
+                            try {
+                                const now = new Date();
+                                const resolutionTime = now.toLocaleTimeString();
+                                const dateClosed = now.toLocaleDateString();
+
+                                const updateResponse = await axios.put(`http://localhost:${process.env.PORT || 5500}/api/reports/${reportId}`, {
+                                    status: 'resolved',
+                                    resolutionTime: resolutionTime,
+                                    dateClosed: dateClosed
+                                });
+
+                                if (updateResponse.status === 200) {
+                                    console.log(`Report ${reportId} marked as resolved.`);
+                                } else {
+                                    console.error(`Failed to mark report ${reportId} as resolved:`, updateResponse.data.message);
+                                }
+                            } catch (error) {
+                                console.error(`Error updating report ${reportId}:`, error.message);
+                            }
+                            // Mark email as seen and skip further processing for this email
+                            imap.addFlags(seqno, ['\Seen'], (err) => {
+                                if (err) {
+                                    console.log('Error marking email as seen:', err);
+                                }
+                            });
+                            return;
+                        }
+
+                        // Original logic for creating new tickets
                         // Check if the email is from an allowed domain
                         if (fromEmail === 'hello@notify.railway.app' || (!fromEmail.endsWith('@gmail.com') && !fromEmail.endsWith('@may-baker.com'))) {
                             console.log(`Email from ${fromEmail} is not from an allowed domain or is from the railway app. Skipping.`);
@@ -115,8 +152,36 @@ const openInbox = (imap) => {
                                     const mailOptions = {
                                         from: process.env.SMTP_USER,
                                         to: report.staff,
-                                        subject: `New Ticket Assigned: ${report.issue}`,
-                                        text: `A new ticket has been assigned to you.\n\nIssue: ${report.issue}\nDescription: ${report.description}\nReported by: ${report.reportedBy}`,
+                                        subject: `New Helpdesk Request Assigned (ID: ${response.data.id}): ${report.issue}`,
+                                        html: `
+                                            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                                              <div style="text-align: center; padding: 20px 0;">
+                                                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0khPVXRmSCB14Patt-Kn5PJGtOG5yyJenuA&s" alt="Company Logo" style="max-width: 150px;">
+                                              </div>
+                                              <h2 style="color: #22a7f0;">New Helpdesk Request Assigned</h2>
+                                              <p>You have been assigned a new helpdesk request with the following details:</p>
+                                              <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                                                <tr>
+                                                  <td style="padding: 8px; border: 1px solid #ddd; background-color: #f2f2f2; font-weight: bold;">Issue:</td>
+                                                  <td style="padding: 8px; border: 1px solid #ddd;">${report.issue}</td>
+                                                </tr>
+                                                <tr>
+                                                  <td style="padding: 8px; border: 1px solid #ddd; background-color: #f2f2f2; font-weight: bold;">Description:</td>
+                                                  <td style="padding: 8px; border: 1px solid #ddd;">${report.description || 'N/A'}</td>
+                                                </tr>
+                                                <tr>
+                                                  <td style="padding: 8px; border: 1px solid #ddd; background-color: #f2f2f2; font-weight: bold;">Reported By:</td>
+                                                  <td style="padding: 8px; border: 1px solid #ddd;">${report.reportedBy || 'Unknown'}</td>
+                                                </tr>
+                                                <tr>
+                                                  <td style="padding: 8px; border: 1px solid #ddd; background-color: #f2f2f2; font-weight: bold;">Department:</td>
+                                                  <td style="padding: 8px; border: 1px solid #ddd;">${report.department || 'N/A'}</td>
+                                                </tr>
+                                              </table>
+                                              <p>Please attend to this request as soon as possible.</p>
+                                              <p>Thank you.</p>
+                                            </div>
+                                          `
                                     };
 
                                     transporter.sendMail(mailOptions, (error, info) => {

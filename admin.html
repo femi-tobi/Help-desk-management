@@ -59,195 +59,138 @@
   <script>
     // Action logging helper
     function logAction(action) {
-      const actions = JSON.parse(localStorage.getItem('helpdeskActions') || '[]');
-      const actor = (currentUser && currentUser.email) ? currentUser.email : 'Unknown';
-      const time = new Date().toLocaleString();
-      actions.push({ actor, action, time });
-      localStorage.setItem('helpdeskActions', JSON.stringify(actions));
+        // This function can be updated to log actions to the server if needed
     }
-    // Load department from sessionStorage (set on login)
+
     const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
     const department = currentUser.department;
-    // Load users and reports from localStorage
-    function getUsers() {
-      return JSON.parse(localStorage.getItem('helpdeskUsers') || '[]');
+
+    async function loadDeptUsers() {
+        try {
+            const response = await fetch('/api/users');
+            const users = await response.json();
+            const deptUsers = users.filter(u => u.department === department);
+            const tbody = document.getElementById('deptUsersBody');
+            tbody.innerHTML = '';
+            deptUsers.forEach(u => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${u.email}</td><td>${u.role}</td><td></td>`;
+                tbody.appendChild(tr);
+            });
+        } catch (error) {
+            console.error('Error loading department users:', error);
+        }
     }
-    function setUsers(users) {
-      localStorage.setItem('helpdeskUsers', JSON.stringify(users));
+
+    async function loadDeptReports() {
+        try {
+            const reportsResponse = await fetch('/api/reports');
+            const allReports = await reportsResponse.json();
+            const usersResponse = await fetch('/api/users');
+            const allUsers = await usersResponse.json();
+
+            const tbody = document.getElementById('deptReportsBody');
+            tbody.innerHTML = '';
+
+            const adminDepartment = currentUser.department;
+
+            const filteredReports = allReports.filter(r => {
+                const isReportFromAdminDept = r.department === adminDepartment;
+                const assignedStaff = allUsers.find(u => u.email === r.staff);
+                const isStaffInAdminDept = assignedStaff && assignedStaff.department === adminDepartment;
+                return isReportFromAdminDept || isStaffInAdminDept;
+            });
+
+            filteredReports.forEach((r) => {
+                const tr = document.createElement('tr');
+                let deptUsers = allUsers.filter(u => u.department === adminDepartment);
+                let userOptions = deptUsers.map(u => `<option value="${u.email}" ${r.staff === u.email ? 'selected' : ''}>${u.email}</option>`).join('');
+                tr.innerHTML = `
+                    <td>${r.issue}</td>
+                    <td>${r.description}</td>
+                    <td><select data-id="${r.id}" class="reassignSelect">${userOptions}</select></td>
+                    <td>${r.status || ''}</td>
+                    <td></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.querySelectorAll('.reassignSelect').forEach(sel => {
+                sel.onchange = async function() {
+                    const reportId = this.getAttribute('data-id');
+                    const newStaff = this.value;
+                    const reportToUpdate = allReports.find(r => r.id == reportId);
+
+                    if (reportToUpdate) {
+                        if (confirm('Are you sure you want to re-assign this task to ' + newStaff + '?')) {
+                            reportToUpdate.staff = newStaff;
+                            try {
+                                const response = await fetch(`/api/reports/${reportId}`, {
+                                    method: 'PUT',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify(reportToUpdate),
+                                });
+
+                                if (response.ok) {
+                                    alert('Report re-assigned successfully!');
+                                    loadDeptReports();
+                                } else {
+                                    const errorData = await response.json();
+                                    alert(errorData.message || 'Failed to re-assign report.');
+                                }
+                            } catch (error) {
+                                console.error('Error re-assigning report:', error);
+                                alert('An error occurred while re-assigning the report.');
+                            }
+                        } else {
+                            this.value = reportToUpdate.staff || '';
+                        }
+                    }
+                };
+            });
+        } catch (error) {
+            console.error('Error loading department reports:', error);
+        }
     }
-    async function getReports() {
-      const response = await fetch('/api/reports');
-      return await response.json();
-    }
-    // setReports function is no longer needed as reports are managed via API
-    // function setReports(reports) {
-    //   localStorage.setItem('helpdeskReports', JSON.stringify(reports));
-    // }
-    // Add user to department
-    document.getElementById('addUserForm').onsubmit = function(e) {
-      e.preventDefault();
-      const email = document.getElementById('newUserEmail').value.trim().toLowerCase();
-      if (!email) return;
-      let users = getUsers();
-      if (users.find(u => u.email === email)) {
-        alert('User already exists!');
-        return;
-      }
-      users.push({ email, role: 'user', department });
-      setUsers(users);
-      loadDeptUsers();
-      document.getElementById('addUserForm').reset();
-  logAction(`added user <b>${email}</b> to department <b>${department}</b>`);
-    };
-    // Load department users
-    function loadDeptUsers() {
-      const users = getUsers().filter(u => u.department === department);
-      const tbody = document.getElementById('deptUsersBody');
-      tbody.innerHTML = '';
-      users.forEach(u => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${u.email}</td><td>${u.role}</td><td></td>`;
-        tbody.appendChild(tr);
-      });
-    }
-    // Load department reports
-    function loadDeptReports() {
-      const allReports = getReports(); // Get all reports
-      const allUsers = getUsers(); // Get all users to check staff departments
-      const tbody = document.getElementById('deptReportsBody');
-      tbody.innerHTML = '';
 
-      const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
-      const adminDepartment = currentUser.department;
+    document.getElementById('addUserForm').onsubmit = async function(e) {
+        e.preventDefault();
+        const email = document.getElementById('newUserEmail').value.trim().toLowerCase();
+        if (!email) return;
 
-      // Filter reports:
-      // 1. Reports where the report's department matches the admin's department
-      // 2. Reports where the assigned staff's department matches the admin's department
-      const filteredReports = allReports.filter(r => {
-        // Check if report's department matches admin's department
-        const isReportFromAdminDept = r.department === adminDepartment;
-
-        // Check if assigned staff is in admin's department
-        const assignedStaff = allUsers.find(u => u.email === r.staff);
-        async function loadDeptReports() {
-      const allReports = await getReports(); // Get all reports
-      const allUsers = getUsers(); // Get all users to check staff departments
-      const tbody = document.getElementById('deptReportsBody');
-      tbody.innerHTML = '';
-
-      const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
-      const adminDepartment = currentUser.department;
-
-      // Filter reports:
-      // 1. Reports where the report's department matches the admin's department
-      // 2. Reports where the assigned staff's department matches the admin's department
-      const filteredReports = allReports.filter(r => {
-        // Check if report's department matches admin's department
-        const isReportFromAdminDept = r.department === adminDepartment;
-
-        // Check if assigned staff is in admin's department
-        const assignedStaff = allUsers.find(u => u.email === r.staff);
-        const isStaffInAdminDept = assignedStaff && assignedStaff.department === adminDepartment;
-
-        return isReportFromAdminDept || isStaffInAdminDept;
-      });
-
-      filteredReports.forEach((r) => {
-        const tr = document.createElement('tr');
-        // Ensure userOptions are only for staff in the admin's department
-        let deptUsers = allUsers.filter(u => u.department === adminDepartment);
-        let userOptions = deptUsers.map(u => `<option value="${u.email}" ${r.staff === u.email ? 'selected' : ''}>${u.email}</option>`).join('');
-        tr.innerHTML = `
-          <td>${r.issue}</td>
-          <td>${r.description}</td>
-          <td><select data-id="${r.id}" class="reassignSelect">${userOptions}</select></td>
-          <td>${r.status || ''}</td>
-          <td></td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      // Add event listeners for reassign
-      document.querySelectorAll('.reassignSelect').forEach(sel => {
-        sel.onchange = async function() {
-          const reportId = this.getAttribute('data-id');
-          const newStaff = this.value;
-          const reportToUpdate = allReports.find(r => r.id == reportId); // Find the report by its ID
-
-          if (reportToUpdate) {
-            if (confirm('Are you sure you want to re-assign this task to ' + newStaff + '?')) {
-              reportToUpdate.staff = newStaff;
-              try {
-                const response = await fetch(`/api/reports/${reportId}`, {
-                  method: 'PUT',
-                  headers: {
+        try {
+            const response = await fetch('/api/users', {
+                method: 'POST',
+                headers: {
                     'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify(reportToUpdate),
-                });
+                },
+                body: JSON.stringify({
+                    email,
+                    role: 'user',
+                    department,
+                }),
+            });
 
-                if (response.ok) {
-                  alert('Report re-assigned successfully!');
-                  loadDeptReports(); // Reload the department reports to reflect changes
-                  logAction(`reassigned report <b>${reportToUpdate.issue}</b> to <b>${reportToUpdate.staff}</b> in department <b>${adminDepartment}</b>`);
-                } else {
-                  const errorData = await response.json();
-                  alert(errorData.message || 'Failed to re-assign report.');
-                }
-              } catch (error) {
-                console.error('Error re-assigning report:', error);
-                alert('An error occurred while re-assigning the report.');
-              }
+            const data = await response.json();
+
+            if (response.ok) {
+                alert('User added successfully!');
+                loadDeptUsers();
+                document.getElementById('addUserForm').reset();
             } else {
-              // revert selection
-              this.value = reportToUpdate.staff || '';
+                alert(data.message || 'Failed to add user.');
             }
-          }
-        };
-      });
-    }
+        } catch (error) {
+            console.error('Error adding user:', error);
+            alert('An error occurred while adding the user.');
+        }
+    };
 
-        return isReportFromAdminDept || isStaffInAdminDept;
-      });
-
-      filteredReports.forEach((r) => { // Removed idx from here, using allReports.indexOf(r) for global index
-        const tr = document.createElement('tr');
-        // Ensure userOptions are only for staff in the admin's department
-        let deptUsers = allUsers.filter(u => u.department === adminDepartment);
-        let userOptions = deptUsers.map(u => `<option value="${u.email}" ${r.staff === u.email ? 'selected' : ''}>${u.email}</option>`).join('');
-        tr.innerHTML = `
-          <td>${r.issue}</td>
-          <td>${r.description}</td>
-          <td><select data-idx="${allReports.indexOf(r)}" class="reassignSelect">${userOptions}</select></td>
-          <td>${r.status || ''}</td>
-          <td></td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      // Add event listeners for reassign
-      document.querySelectorAll('.reassignSelect').forEach(sel => {
-        sel.onchange = function() {
-          const globalIdx = this.getAttribute('data-idx'); // Use globalIdx here
-          let reports = getReports(); // Get all reports
-          const report = reports[globalIdx]; // Get the report by global index
-          const newStaff = this.value;
-          if (report) {
-            if (confirm('Are you sure you want to re-assign this task to ' + newStaff + '?')) {
-              report.staff = newStaff;
-              setReports(reports); // Save all reports back to localStorage
-              loadDeptReports(); // Reload the department reports
-              logAction(`reassigned report <b>${report.issue}</b> to <b>${report.staff}</b> in department <b>${adminDepartment}</b>`);
-            } else {
-              this.value = report.staff || '';
-            }
-          }
-        };
-      });
-    }
     window.addEventListener('DOMContentLoaded', function() {
-      loadDeptUsers();
-      loadDeptReports();
+        loadDeptUsers();
+        loadDeptReports();
     });
   </script>
 </body>

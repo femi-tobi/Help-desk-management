@@ -73,11 +73,39 @@ app.get('/api/users', (req, res) => {
   });
 });
 
+// API to get all departments
+app.get('/api/departments', (req, res) => {
+  db.all('SELECT DISTINCT department FROM users WHERE department IS NOT NULL', [], (err, rows) => {
+    if (err) {
+      console.error('Database error fetching departments:', err.message);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+    const departments = rows.map(row => row.department);
+    res.json(departments);
+  });
+});
+
+// API to get users by department
+app.get('/api/users/department/:department', (req, res) => {
+  const { department } = req.params;
+  db.all('SELECT * FROM users WHERE department = ?', [department], (err, rows) => {
+    if (err) {
+      console.error('Database error fetching users by department:', err.message);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+    res.json(rows);
+  });
+});
+
 // API to add a new user
 app.post('/api/users', (req, res) => {
   const { email, role, department } = req.body;
   if (!email || !role) {
     return res.status(400).json({ message: 'Email and role are required' });
+  }
+  // Validate email domain
+  if (!email.endsWith('@gmail.com') && !email.endsWith('@may-bakerng.com')) {
+    return res.status(400).json({ message: 'Invalid email domain. Only @gmail.com and @may-bakerng.com are allowed.' });
   }
   db.run('INSERT INTO users (email, role, department) VALUES (?, ?, ?)', [email, role, department || null], function(err) {
     if (err) {
@@ -131,11 +159,6 @@ const nodemailer = require('nodemailer');
 app.post('/api/reports', (req, res) => {
   const { issue, description, branch, department, staff, status, resolution, reportedBy, dateReported, timeReported, resolutionTime, dateClosed } = req.body;
 
-  // Validate reportedBy email
-  if (reportedBy && !reportedBy.endsWith('@gmail.com') && !reportedBy.endsWith('@may-bakerng.com')) {
-    return res.status(400).json({ message: 'Invalid email domain. Only @gmail.com and @may-bakerng.com are allowed.' });
-  }
-
   db.run(
     `INSERT INTO reports (issue, description, branch, department, staff, status, resolution, reportedBy, dateReported, timeReported, resolutionTime, dateClosed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [issue, description, branch, department, staff, status, resolution, reportedBy, dateReported, timeReported, resolutionTime, dateClosed],
@@ -161,8 +184,64 @@ app.post('/api/reports', (req, res) => {
         const mailOptions = {
           from: process.env.SMTP_USER,
           to: staff,
-          subject: `New Helpdesk Request Assigned: ${issue}`,
-          text: `You have been assigned a new helpdesk request.\n\nIssue: ${issue}\nDescription: ${description}\nReported by: ${reportedBy || 'Unknown'}\nDepartment: ${department || 'N/A'}`,
+                    subject: `New Helpdesk Request Assigned (ID: ${this.lastID}): ${issue}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+              <div style="text-align: center; padding: 20px 0;">
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0khPVXRmSCB14Patt-Kn5PJGtOG5yyJenuA&s" alt="Company Logo" style="max-width: 150px;">
+              </div>
+              <h2 style="color: #22a7f0;">New Helpdesk Request Assigned</h2>
+              <p>You have been assigned a new helpdesk request with the following details:</p>
+              <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <tr>
+                  <td style="padding: 8px; border: 1px solid #ddd; background-color: #f2f2f2; font-weight: bold;">Issue:</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${issue}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border: 1px solid #ddd; background-color: #f2f2f2; font-weight: bold;">Description:</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${description || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border: 1px solid #ddd; background-color: #f2f2f2; font-weight: bold;">Branch:</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${branch || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border: 1px solid #ddd; background-color: #f2f2f2; font-weight: bold;">Department:</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${department || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border: 1px solid #ddd; background-color: #f2f2f2; font-weight: bold;">Staff Assigned:</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${staff || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border: 1px solid #ddd; background-color: #f2f2f2; font-weight: bold;">Status:</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${status || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border: 1px solid #ddd; background-color: #f2f2f2; font-weight: bold;">Reported By:</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${reportedBy || 'Unknown'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border: 1px solid #ddd; background-color: #f2f2f2; font-weight: bold;">Date Reported:</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${dateReported || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border: 1px solid #ddd; background-color: #f2f2f2; font-weight: bold;">Time Reported:</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${timeReported || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border: 1px solid #ddd; background-color: #f2f2f2; font-weight: bold;">Resolution Time:</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${resolutionTime || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border: 1px solid #ddd; background-color: #f2f2f2; font-weight: bold;">Date Closed:</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${dateClosed || 'N/A'}</td>
+                </tr>
+              </table>
+              <p>Please attend to this request as soon as possible.</p>
+              <p>Thank you.</p>
+            </div>
+          `
         };
 
         transporter.sendMail(mailOptions, (error, info) => {
