@@ -4,6 +4,7 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const aiRouter = require('./ai');
+const { startEmailService } = require('./email-service');
 
 const app = express();
 const PORT = process.env.PORT || 5500;
@@ -127,6 +128,12 @@ app.delete('/api/users/:email', (req, res) => {
 // API to create a new report
 app.post('/api/reports', (req, res) => {
   const { issue, description, branch, department, staff, status, resolution, reportedBy, dateReported, timeReported, resolutionTime, dateClosed } = req.body;
+
+  // Validate reportedBy email
+  if (reportedBy && !reportedBy.endsWith('@gmail.com') && !reportedBy.endsWith('@may-bakerng.com')) {
+    return res.status(400).json({ message: 'Invalid email domain. Only @gmail.com and @may-bakerng.com are allowed.' });
+  }
+
   db.run(
     `INSERT INTO reports (issue, description, branch, department, staff, status, resolution, reportedBy, dateReported, timeReported, resolutionTime, dateClosed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [issue, description, branch, department, staff, status, resolution, reportedBy, dateReported, timeReported, resolutionTime, dateClosed],
@@ -223,7 +230,11 @@ app.use('/api/ai', aiRouter);
 // Serve static files (like index.html, css, images) from the project root
 app.use(express.static(path.join(__dirname, '')));
 
+// Start the email polling service to check for new emails every 5 minutes
+setInterval(startEmailService, 300000);
+
 app.listen(PORT, () => {
-	console.log(`\nServer is running!`);
+	console.log(`
+Server is running!`);
 	console.log(`Please open your browser and go to http://localhost:${PORT}`);
 });
