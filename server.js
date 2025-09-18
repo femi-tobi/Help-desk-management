@@ -353,6 +353,10 @@ app.get('/debug/users', (req, res) => {
 // Mount AI chat API
 app.use('/api/ai', aiRouter);
 
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'landing.html'));
+});
+
 // Serve static files (like index.html, css, images) from the project root
 app.use(express.static(path.join(__dirname, '')));
 
