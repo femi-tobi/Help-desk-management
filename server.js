@@ -246,13 +246,63 @@ app.put('/api/reports/:id', (req, res) => {
   db.run(
     `UPDATE reports SET issue = ?, description = ?, branch = ?, department = ?, staff = ?, status = ?, resolution = ?, reportedBy = ?, dateReported = ?, timeReported = ?, resolutionTime = ?, dateClosed = ? WHERE id = ?`,
     [issue, description, branch, department, staff, status, resolution, reportedBy, dateReported, timeReported, resolutionTime, dateClosed, id],
-    function(err) {
+    async function(err) {
       if (err) {
         console.error('Database error updating report:', err.message);
         return res.status(500).json({ message: 'Internal server error' });
       }
       if (this.changes === 0) {
         return res.status(404).json({ message: 'Report not found' });
+      }
+      // Send email if resolved
+      if (status && status.toLowerCase() === 'resolved') {
+        db.get('SELECT * FROM reports WHERE id = ?', [id], (err, report) => {
+          if (err || !report) return;
+          const nodemailer = require('nodemailer');
+          const transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: process.env.SMTP_PORT,
+            secure: process.env.SMTP_SECURE === 'true',
+            auth: {
+              user: process.env.SMTP_USER,
+              pass: process.env.SMTP_PASSWORD,
+            },
+          });
+          const subject = `Helpdesk Report Resolved: ${report.issue}`;
+          const html = `
+            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+              <h2 style="color: #22a7f0;">Your Helpdesk Report Has Been Resolved</h2>
+              <p><b>Issue:</b> ${report.issue}</p>
+              <p><b>Description:</b> ${report.description}</p>
+              <p><b>Resolution:</b> ${report.resolution}</p>
+              <p><b>Resolved By:</b> ${report.staff}</p>
+              <p><b>Date Closed:</b> ${report.dateClosed || ''}</p>
+              <p>Thank you for using the Helpdesk!</p>
+            </div>
+          `;
+          // Send to reporter
+          if (report.reportedBy) {
+            transporter.sendMail({
+              from: process.env.SMTP_USER,
+              to: report.reportedBy,
+              subject,
+              html
+            }, (error, info) => {
+              if (error) console.error('Error sending resolved email to reporter:', error);
+            });
+          }
+          // Send to staff
+          if (report.staff) {
+            transporter.sendMail({
+              from: process.env.SMTP_USER,
+              to: report.staff,
+              subject,
+              html
+            }, (error, info) => {
+              if (error) console.error('Error sending resolved email to staff:', error);
+            });
+          }
+        });
       }
       res.json({ message: 'Report updated successfully' });
     }

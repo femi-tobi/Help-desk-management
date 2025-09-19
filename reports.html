@@ -46,9 +46,16 @@
     // Set user name from sessionStorage
     document.getElementById('userName').textContent = sessionStorage.getItem('userEmail') || 'User';
 
-    // Get reports from localStorage
-    function getReports() {
-      return JSON.parse(localStorage.getItem('helpdeskReports') || '[]');
+    // Get reports from backend API
+    async function getReports() {
+      try {
+        const response = await fetch('/api/reports');
+        if (!response.ok) throw new Error('Failed to fetch reports');
+        return await response.json();
+      } catch (e) {
+        console.error('Error fetching reports:', e);
+        return [];
+      }
     }
 
     // Pie chart: Pending vs Resolved
@@ -71,8 +78,8 @@
       return counts;
     }
 
-    function renderCharts() {
-      const reports = getReports();
+    async function renderCharts() {
+      const reports = await getReports();
       // Pie chart
       const { pending, resolved } = getStatusCounts(reports);
       const pieData = {
@@ -82,7 +89,7 @@
           backgroundColor: ['#9b8cff', '#ffc0cb'],
         }]
       };
-      const pieChart = new Chart(document.getElementById('pieChart').getContext('2d'), {
+      new Chart(document.getElementById('pieChart').getContext('2d'), {
         type: 'pie',
         data: pieData,
         options: {
@@ -104,7 +111,7 @@
           backgroundColor: '#87ceeb',
         }]
       };
-      const barChart = new Chart(document.getElementById('barChart').getContext('2d'), {
+      new Chart(document.getElementById('barChart').getContext('2d'), {
         type: 'bar',
         data: barData,
         options: {
@@ -121,8 +128,8 @@
     window.addEventListener('DOMContentLoaded', renderCharts);
 
     // Export to Excel (CSV)
-    function exportToExcel() {
-      const reports = getReports();
+    async function exportToExcel() {
+      const reports = await getReports();
       if (!reports.length) return alert('No reports to export!');
       const headers = ['Issue', 'Description', 'Date Reported', 'Time Reported', 'Reported By', 'Branch', 'Resolution Path', 'Department', 'Staff Assigned', 'Status', 'Resolution Time', 'Date Closed'];
       const rows = reports.map(r => [
