@@ -7,194 +7,122 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f4f4f4;
       margin: 0;
       padding: 0;
+      background-color: #ffffff;
     }
+
     .navbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #fafafa;
-      padding: 12px 22px;
-      border-bottom: 1px solid #ececec;
+      background-color: #fafafa;
+      padding: 1rem 2rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .navbar-left {
+    .navbar .logo img {
+      height: 50px;
+    }
+    .navbar .nav-links a {
+      text-decoration: none;
+      background-color: #062051;
+      color: #fff;
+      font-weight: bold;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      transition: background-color 0.3s;
+    }
+    .navbar .nav-links a:hover {
+      background-color: #f0f0f0;
+      color: #062051;
+    }
+    a{
+      text-decoration: none;
+      background-color: #062051;
+      color: #fff;
+      font-weight: bold;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      transition: background-color 0.3s;   
+    }
+    a:hover {
+      background-color: #f0f0f0;
+      color: #062051;
+    }
+    .main-content {
+      padding: 1rem 2rem;
+      text-align: center;
+    }
+    .main-content h1 {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+    .main-content p {
+      font-size: 1.2rem;
+      color: #666;
+    }
+    .img{
+      height: 600px;
+      width: 600px;
+    }
+    .hero-content {
       display: flex;
       align-items: center;
-      gap: 14px;
+      justify-content: space-around;
     }
-        .navbar-left img {
-          height: 48px;
-        }
-        .site-name {
-          font-weight: 700;
-        }
-        .navbar-right {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .nav-cta {
-          background: #22a7f0;
-          color: #fff;
-          padding: 8px 14px;
-          border-radius: 24px;
-          border: none;
-        }
-        .user-icon {
-          width: 42px;
-          height: 42px;
-          border-radius: 50%;
-          background: #eef6fb;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .hero {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 40px 0;
-          gap: 32px;
-        }
-        .hero-content {
-          max-width: 480px;
-        }
-        .hero-content h1 {
-          font-size: 2.2rem;
-          font-weight: 700;
-          margin-bottom: 18px;
-        }
-        .hero-content p {
-          font-size: 1.1rem;
-          margin-bottom: 24px;
-        }
-        .hero-img {
-          max-width: 320px;
-          border-radius: 12px;
-          box-shadow: 0 2px 12px rgba(0,0,0,0.10);
-        }
-        .features {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 24px;
-          margin: 48px 0;
-        }
-        .feature {
-          background: #fff;
-          border-radius: 10px;
-          box-shadow: 0 1px 6px rgba(0,0,0,0.10);
-          padding: 28px 22px;
-          text-align: center;
-        }
-        .feature img {
-          height: 56px;
-          margin-bottom: 18px;
-        }
-        .feature h3 {
-          font-size: 1.2rem;
-          font-weight: 600;
-          margin-bottom: 12px;
-        }
-        .feature p {
-          font-size: 1rem;
-          color: #555;
-        }
-        .cta-section {
-          background: #22a7f0;
-          color: #fff;
-          border-radius: 10px;
-          padding: 38px 28px;
-          text-align: center;
-          margin-bottom: 40px;
-        }
-        .cta-section h2 {
-          font-size: 1.5rem;
-          margin-bottom: 18px;
-        }
-        .cta-section p {
-          font-size: 1.1rem;
-          margin-bottom: 22px;
-        }
-        .cta-btn {
-          background: #fff;
-          color: #22a7f0;
-          padding: 10px 24px;
-          border-radius: 24px;
-          border: none;
-          font-size: 1.1rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: background 0.2s;
-        }
-        .cta-btn:hover {
-          background: #eaf6fc;
-        }
-        @media (max-width: 800px) {
-          .navbar {
-            flex-direction: column;
-            align-items: flex-start;
-            padding: 10px 8px;
-          }
-          .navbar-left, .navbar-right {
-            flex-direction: row;
-            gap: 8px;
-          }
-          .site-name {
-            font-size: 1rem;
-          }
-          .nav-cta {
-            padding: 6px 10px;
-            font-size: 0.95rem;
-          }
-          .user-icon {
-            width: 32px;
-            height: 32px;
-          }
-          .hero {
-            flex-direction: column;
-            gap: 18px;
-            padding: 18px 0;
-          }
-          .hero-content {
-            max-width: 98vw;
-          }
-          .hero-content h1 {
-            font-size: 1.2rem;
-          }
-          .hero-img {
-            max-width: 96vw;
-          }
-          .features {
-            grid-template-columns: 1fr;
-            gap: 14px;
-            margin: 24px 0;
-          }
-          .feature {
-            padding: 18px 8px;
-          }
-          .feature img {
-            height: 38px;
-          }
-          .feature h3 {
-            font-size: 1rem;
-          }
-          .feature p {
-            font-size: 0.95rem;
-          }
-          .cta-section {
-            padding: 18px 8px;
-          }
-          .cta-section h2 {
-            font-size: 1.1rem;
-          }
-          .cta-section p {
-            font-size: 0.95rem;
-          }
-          .cta-btn {
-            padding: 8px 14px;
-            font-size: 0.98rem;
-          }
-        }
-      </style>
+    .hero-text {
+      text-align: left;
+      animation: slideInLeft 1s ease-in-out;
+    }
+    .hero-image img {
+      max-width: 500px;
+      height: auto;
+      animation: slideInRight 1s ease-in-out;
+    }
+
+    @keyframes slideInLeft {
+      from {
+        transform: translateX(-100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideInRight {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="logo">
+      <img src="mb.jpeg" alt="May & Baker Logo">
+    </div>
+    <div class="nav-links">
+      <a href="login.html">Login</a>
+    </div>
+  </nav>
+  <div class="main-content">
+    <div class="hero-content">
+      <div class="hero-text">
+        <h1>May & Baker <br> Help-desk Solution</h1>
+        <p>Our Help Desk is designed to provide quick resolutions, technical guidance, and proactive support for all your IT needs</p>
+        <a href="login.html">Get Started</a>
+      </div>
+      <div class="hero-image">
+        <img src="landpg.jpg" alt="Helpdesk Illustration">
+      </div>
+    </div>
+  </div>
+</body>
+</html>
