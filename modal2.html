@@ -5,89 +5,98 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
 
-    <style>
-         /* navbar (preserve user's existing look) */
-        .navbar{display:flex;justify-content:space-between;align-items:center;background:#fafafa;padding:12px 22px;border-bottom:1px solid #ececec}
-        .navbar-left{display:flex;align-items:center;gap:14px}
-        .navbar-left img{height:48px}
-        .site-name{font-weight:700}
-        .navbar-right{display:flex;align-items:center;gap:12px}
-        .nav-cta{background:#22a7f0;color:#fff;padding:8px 14px;border-radius:24px;border:none}
-        .user-icon{width:42px;height:42px;border-radius:50%;background:#eef6fb;display:flex;align-items:center;justify-content:center}
-
-         body {
-                        font-family: Arial, sans-serif;
-                        background: #f4f4f4;
-                        margin: 0;
-                        padding: 0;
-                    }
-                    .modal-container {
-                        background: #fff;
-                        max-width: 500px;
-                        margin: 40px auto;
-                        border-radius: 10px;
-                        box-shadow: 0 2px 12px rgba(0,0,0,0.12);
-                        padding: 32px 28px 24px 28px;
-                        position: relative;
-                    }
-                    .back-icon {
-                        position: absolute;
-                        left: 18px;
-                        top: 18px;
-                        font-size: 22px;
-                        color: #22a7f0;
-                        cursor: pointer;
-                        text-decoration: none;
-                    }
-                    h2 {
-                        text-align: center;
-                        margin-bottom: 24px;
-                    }
-                    form label {
-                        display: block;
-                        margin-bottom: 6px;
-                        font-weight: 500;
-                    }
-                    form input, form select, form textarea {
-                        width: 100%;
-                        padding: 8px 10px;
-                        margin-bottom: 18px;
-                        border: none;
-                        border-bottom: 2px solid #8f8e8e;
-                        background: transparent;
-                        outline: none;
-                        font-size: 15px;
-                        border-radius: 0;
-                        resize: none;
-                    }
-                    form select {
-                        background: #f9f9f9;
-                    }
-                    .flex-row {
-                        display: flex;
-                        gap: 16px;
-                        padding-bottom: 20px;
-                    }
-                    .flex-row > div {
-                        flex: 1;
-                        padding-top: 12px;
-                    }
-                    .btn {
-                        background: #22a7f0;
-                        color: #fff;
-                        border: none;
-                        padding: 10px 0;
-                        width: 100%;
-                        border-radius: 4px;
-                        font-size: 16px;
-                        cursor: pointer;
-                        margin-top: 8px;
-                        transition: background 0.2s;
-                    }
-                    .btn:hover {
-                        background: #1780b8;
-                    }
-    </style>
+        <style>
+            .navbar{display:flex;justify-content:space-between;align-items:center;background:#fafafa;padding:12px 22px;border-bottom:1px solid #ececec}
+            .navbar-left{display:flex;align-items:center;gap:14px}
+            .navbar-left img{height:48px}
+            .site-name{font-weight:700}
+            .navbar-right{display:flex;align-items:center;gap:12px}
+            .nav-cta{background:#22a7f0;color:#fff;padding:8px 14px;border-radius:24px;border:none}
+            .user-icon{width:42px;height:42px;border-radius:50%;background:#eef6fb;display:flex;align-items:center;justify-content:center}
+            body {
+                font-family: Arial, sans-serif;
+                background: #f4f4f4;
+                margin: 0;
+                padding: 0;
+            }
+            .modal-container {
+                background: #fff;
+                max-width: 500px;
+                margin: 40px auto;
+                border-radius: 10px;
+                box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+                padding: 32px 28px 24px 28px;
+                position: relative;
+            }
+            .back-icon {
+                position: absolute;
+                left: 18px;
+                top: 18px;
+                font-size: 22px;
+                color: #22a7f0;
+                cursor: pointer;
+                text-decoration: none;
+            }
+            h2 {
+                text-align: center;
+                margin-bottom: 24px;
+            }
+            .img-preview {
+                display: block;
+                margin: 0 auto 18px auto;
+                max-width: 100%;
+                border-radius: 8px;
+                box-shadow: 0 1px 6px rgba(0,0,0,0.10);
+                cursor: pointer;
+                transition: box-shadow 0.2s;
+            }
+            .img-preview:hover {
+                box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+            }
+            .btn {
+                background: #22a7f0;
+                color: #fff;
+                border: none;
+                padding: 10px 0;
+                width: 100%;
+                border-radius: 4px;
+                font-size: 16px;
+                cursor: pointer;
+                margin-top: 8px;
+                transition: background 0.2s;
+            }
+            .btn:hover {
+                background: #1780b8;
+            }
+            .modal-footer {
+                display: flex;
+                justify-content: space-between;
+                gap: 16px;
+                margin-top: 18px;
+            }
+            @media (max-width: 700px) {
+                .modal-container {
+                    width: 98vw;
+                    padding: 8px;
+                }
+                h2 {
+                    font-size: 1.05rem;
+                }
+                .img-preview {
+                    max-width: 96vw;
+                }
+                .btn {
+                    font-size: 0.95rem;
+                    padding: 8px 12px;
+                    width: 98vw;
+                    margin-bottom: 8px;
+                }
+                .modal-footer {
+                    flex-direction: column;
+                    gap: 8px;
+                }
+            }
+        </style>
 </head>
 <body>
     <nav class="navbar">
@@ -160,7 +169,6 @@
                                 <select id="status" name="status" required>
                                     <option value="">Select status</option>
                                     <option value="open">Open</option>
-                                    <option value="in-progress">In Progress</option>
                                     <option value="resolved">Resolved</option>
                                 </select>
                             </div>
