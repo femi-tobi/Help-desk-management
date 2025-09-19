@@ -123,6 +123,8 @@
                         <label for="description">Issue Description</label>
                         <textarea id="description" name="description" rows="3" required></textarea>
 
+                        <div id="imageContainer" style="margin-bottom:18px;text-align:center;"></div>
+
                         <div class="flex-row">
                             <div>
                                 <label for="branch">Branch</label>
@@ -254,6 +256,36 @@
                 document.getElementById('staff').value = report.staff || ''; // Select the assigned staff
                 document.getElementById('status').value = report.status || '';
                 document.getElementById('resolution').value = report.resolution || '';
+
+                // Show attached image if present
+                const imageContainer = document.getElementById('imageContainer');
+                imageContainer.innerHTML = '';
+                if (report.image) {
+                    imageContainer.innerHTML = `<label>Attached Image:</label><br><img src="${report.image}" alt="Issue Image" id="attachedImage" style="max-width:100%;max-height:180px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin-bottom:8px;cursor:pointer;">`;
+                    // Add lightbox/modal for full size view
+                    const img = document.getElementById('attachedImage');
+                    img.onclick = function() {
+                        let modal = document.createElement('div');
+                        modal.style.position = 'fixed';
+                        modal.style.top = '0';
+                        modal.style.left = '0';
+                        modal.style.width = '100vw';
+                        modal.style.height = '100vh';
+                        modal.style.background = 'rgba(0,0,0,0.8)';
+                        modal.style.display = 'flex';
+                        modal.style.alignItems = 'center';
+                        modal.style.justifyContent = 'center';
+                        modal.style.zIndex = '9999';
+                        modal.innerHTML = `<img src='${report.image}' style='max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 4px 24px #0008;'><span style='position:absolute;top:24px;right:40px;font-size:2.5rem;color:#fff;cursor:pointer;' id='closeImgModal'>&times;</span>`;
+                        document.body.appendChild(modal);
+                        document.getElementById('closeImgModal').onclick = function() {
+                            modal.remove();
+                        };
+                        modal.onclick = function(e) {
+                            if (e.target === modal) modal.remove();
+                        };
+                    };
+                }
 
                 // Make all fields except resolution and status readonly/disabled
                 document.getElementById('issue').readOnly = true;

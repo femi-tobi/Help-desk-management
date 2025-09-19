@@ -139,15 +139,22 @@
                             </div>
                         </div>
 
-
                         <div class="flex-row">
                             <div>
                                 <label for="staff">Staff Assigned</label>
+                                <div style="position:relative;">
+                                    <input type="text" id="staffSearch" placeholder="Search staff email..." style="width:100%;margin-bottom:8px;">
+                                    <div id="staffSearchDropdown" style="position:absolute;top:38px;left:0;width:100%;background:#fff;border:1px solid #e0e0e0;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);z-index:10;display:none;"></div>
+                                </div>
                                 <select id="staff" name="staff" required>
                                     <option value="">Select staff</option>
                                 </select>
                             </div>
                         </div>
+
+                        <label for="image">Attach Image (optional)</label>
+                        <input type="file" id="image" name="image" accept="image/*">
+                        <div class="image-preview" id="imagePreview" style="text-align:center;max-width:180px;margin:auto;"></div>
 
                         <button type="submit" class="btn">Submit</button>
                     </form>
@@ -195,15 +202,41 @@
             }
         }
 
-        async function updateStaffOptions() {
+        let allStaffUsers = [];
+        async function updateStaffOptions(filterText = '') {
             const dept = document.getElementById('department').value;
             const staffSelect = document.getElementById('staff');
             staffSelect.innerHTML = '<option value="">Select staff</option>';
+            const dropdown = document.getElementById('staffSearchDropdown');
+            dropdown.innerHTML = '';
+            dropdown.style.display = 'none';
             if (!dept) return;
             try {
                 const response = await fetch(`/api/users/department/${dept}`);
-                const users = await response.json();
-                users.forEach(user => {
+                allStaffUsers = await response.json();
+                let filteredUsers = allStaffUsers;
+                if (filterText && filterText.length >= 2) {
+                    filteredUsers = allStaffUsers.filter(user => user.email.toLowerCase().includes(filterText.toLowerCase()));
+                    // Show dropdown if matches found
+                    if (filteredUsers.length > 0) {
+                        dropdown.style.display = 'block';
+                        filteredUsers.forEach(user => {
+                            const item = document.createElement('div');
+                            item.textContent = user.email;
+                            item.style.padding = '8px 12px';
+                            item.style.cursor = 'pointer';
+                            item.onmouseover = function() { item.style.background = '#f0f8ff'; };
+                            item.onmouseout = function() { item.style.background = '#fff'; };
+                            item.onclick = function() {
+                                staffSelect.value = user.email;
+                                document.getElementById('staffSearch').value = user.email;
+                                dropdown.style.display = 'none';
+                            };
+                            dropdown.appendChild(item);
+                        });
+                    }
+                }
+                filteredUsers.forEach(user => {
                     const opt = document.createElement('option');
                     opt.value = user.email;
                     opt.textContent = user.email;
@@ -218,39 +251,45 @@
         window.addEventListener('DOMContentLoaded', function() {
             populateDepartments();
             updateStaffOptions();
-            document.getElementById('department').addEventListener('change', updateStaffOptions);
+            document.getElementById('department').addEventListener('change', function() { updateStaffOptions(); });
+            document.getElementById('staffSearch').addEventListener('input', function(e) {
+                updateStaffOptions(e.target.value);
+            });
+        });
+
+        // Image preview
+        document.getElementById('image').addEventListener('change', function(e) {
+            const preview = document.getElementById('imagePreview');
+            preview.innerHTML = '';
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    preview.innerHTML = `<img src="${ev.target.result}" alt="Preview" style="max-width:100%;max-height:120px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">`;
+                };
+                reader.readAsDataURL(file);
+            }
         });
 
         async function handleReport(event) {
             event.preventDefault();
-            // Gather form data
             const now = new Date();
-            const report = {
-                issue: document.getElementById('issue').value,
-                description: document.getElementById('description').value,
-                branch: document.getElementById('branch').value,
-                department: document.getElementById('department').value,
-                staff: document.getElementById('staff').value,
-                status: 'open', // New reports are always 'open'
-                resolution: '',
-                reportedBy: sessionStorage.getItem('userEmail') || '',
-                dateReported: now.toLocaleDateString(),
-                timeReported: now.toLocaleTimeString(),
-                resolutionTime: '',
-                dateClosed: ''
-            };
+            const form = document.getElementById('reportForm');
+            const formData = new FormData(form);
+            formData.append('status', 'open');
+            formData.append('resolution', '');
+            formData.append('reportedBy', sessionStorage.getItem('userEmail') || '');
+            formData.append('dateReported', now.toLocaleDateString());
+            formData.append('timeReported', now.toLocaleTimeString());
+            formData.append('resolutionTime', '');
+            formData.append('dateClosed', '');
 
             try {
                 const response = await fetch('/api/reports', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(report),
+                    body: formData
                 });
-
                 const data = await response.json();
-
                 if (response.ok) {
                     alert('Report submitted successfully!');
                     window.location.href = 'index.html';

@@ -49,7 +49,7 @@
       const reports = await response.json();
       const tbody = document.getElementById('allReportsBody');
       tbody.innerHTML = '';
-      reports.forEach(function(report, idx) {
+  reports.slice().reverse().forEach(function(report, idx) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${idx + 1}</td>

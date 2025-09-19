@@ -7,22 +7,22 @@
     <link rel="stylesheet" href="login.css">
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-form">
-            <div class="logo-section">
-                <img id="center-image" src="mb.jpeg" alt="Logo">
-                <h1>Login</h1>
-            </div>
-            
-            <form id="loginForm" onsubmit="handleLogin(event)">
-                <div class="input-group">
-                    <div class="input-box">
-                        <input type="email" id="email" name="email" placeholder="Enter your email address" required>
-                    </div>
+    <div class="main-login-wrapper">
+        <div class="login-card">
+            <div class="login-left">
+                <img class="login-logo" src="mb.jpeg" alt="M&B Logo">
+                <div class="login-form-box">
+                    <h2>Login with your official<br>email-address</h2>
+                    <form id="loginForm" onsubmit="handleLogin(event)">
+                        <label for="email" class="login-label">Email</label>
+                        <input type="email" id="email" name="email" class="login-input" placeholder="Enter your email address" required>
+                        <button type="submit" class="login-btn">Login</button>
+                    </form>
                 </div>
-
-                <button type="submit" class="btn">Submit</button>
-            </form>
+            </div>
+            <div class="login-right">
+                <img class="login-illustration" src="log-i.png" alt="Login Illustration">
+            </div>
         </div>
     </div>
 
@@ -30,7 +30,7 @@
         async function handleLogin(event) {
             event.preventDefault();
             const email = document.getElementById('email').value.trim().toLowerCase();
-            const btn = document.querySelector('.btn');
+            const btn = document.querySelector('.login-btn');
             btn.textContent = 'Submitting...';
             btn.disabled = true;
 
@@ -61,17 +61,17 @@
                         }
                     } else {
                         alert(data.message || 'Login failed. Please try again.');
-                        btn.textContent = 'Submit';
+                        btn.textContent = 'Login';
                         btn.disabled = false;
                     }
                 } catch (error) {
                     console.error('Error during login:', error);
                     alert('An error occurred during login. Please try again later.');
-                    btn.textContent = 'Submit';
+                    btn.textContent = 'Login';
                     btn.disabled = false;
                 }
             } else {
-                btn.textContent = 'Submit';
+                btn.textContent = 'Login';
                 btn.disabled = false;
             }
         }

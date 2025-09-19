@@ -176,7 +176,7 @@
 
     <section class="hero-grid">
       <div class="cta">
-        <h2>Do you have a problem you want us to work on?</h2>
+        <h2>What do you need help with?</h2>
         <a class="btn" href="modal.html">Log A Report</a>
       </div>
 
@@ -240,7 +240,7 @@
       const notifList = document.getElementById('notifList');
       notifList.innerHTML = '';
       let found = false;
-      reports.forEach(function(report) {
+  reports.slice().reverse().forEach(function(report) {
         if (report.staff && userEmail && report.staff.toLowerCase() === userEmail.toLowerCase()) {
           found = true;
           const li = document.createElement('li');
@@ -314,7 +314,7 @@
         filtered = filtered.filter(r => (r.reportedBy || '').toLowerCase().includes(searchValue));
       }
 
-      filtered.forEach(function(report, idx) {
+  filtered.slice().reverse().forEach(function(report, idx) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${idx + 1}</td>

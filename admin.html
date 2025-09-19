@@ -101,7 +101,7 @@
                 return isReportFromAdminDept || isStaffInAdminDept;
             });
 
-            filteredReports.forEach((r) => {
+            filteredReports.slice().reverse().forEach((r) => {
                 const tr = document.createElement('tr');
                 let deptUsers = allUsers.filter(u => u.department === adminDepartment);
                 let userOptions = deptUsers.map(u => `<option value="${u.email}" ${r.staff === u.email ? 'selected' : ''}>${u.email}</option>`).join('');
