@@ -31,7 +31,9 @@
       <input type="text" id="newUserDept" placeholder="Department" required />
       <button type="submit" class="btn">Add User</button>
     </form>
-    <h3>All Users</h3>
+    <!-- Department filter dropdown removed, tabs only -->
+    <div id="deptTabs" style="display:flex;gap:10px;margin-bottom:18px;"></div>
+    <h3>Users</h3>
     <table>
       <thead>
         <tr>
@@ -43,6 +45,7 @@
       </thead>
       <tbody id="allUsersBody"></tbody>
     </table>
+    <div id="userPagination" style="margin-top:18px;display:flex;gap:8px;justify-content:center;"></div>
     <h3>All Reports</h3>
     <table>
       <thead>
@@ -120,13 +123,29 @@
     };
 
     // Load all users from database
-    async function loadAllUsers() {
+    async function loadAllUsers(selectedDept = 'all', page = 1) {
       try {
         const response = await fetch('/api/users');
         const users = await response.json();
         const tbody = document.getElementById('allUsersBody');
         tbody.innerHTML = '';
-        users.forEach(u => {
+        // Get unique departments
+        const departments = [...new Set(users.map(u => u.department).filter(Boolean))];
+        // Populate department tabs
+        const deptTabs = document.getElementById('deptTabs');
+        deptTabs.innerHTML = departments.map(d => `<button class="btn dept-tab" data-dept="${d}">${d}</button>`).join('');
+        // Filter users by department
+        let filteredUsers = users;
+        if (selectedDept !== 'all') {
+          filteredUsers = users.filter(u => u.department === selectedDept);
+        }
+        // Pagination logic
+        const usersPerPage = 10;
+        const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+        const startIdx = (page - 1) * usersPerPage;
+        const endIdx = startIdx + usersPerPage;
+        const pagedUsers = filteredUsers.slice(startIdx, endIdx);
+        pagedUsers.forEach(u => {
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>${u.email}</td>
@@ -142,7 +161,19 @@
           `;
           tbody.appendChild(tr);
         });
-
+        // Pagination controls
+        const paginationDiv = document.getElementById('userPagination');
+        paginationDiv.innerHTML = '';
+        if (totalPages > 1) {
+          for (let i = 1; i <= totalPages; i++) {
+            const btn = document.createElement('button');
+            btn.textContent = i;
+            btn.className = 'btn';
+            if (i === page) btn.style.background = '#1780b8';
+            btn.onclick = () => loadAllUsers(selectedDept, i);
+            paginationDiv.appendChild(btn);
+          }
+        }
         // Role change
         document.querySelectorAll('.roleSelect').forEach(sel => {
           sel.onchange = async function() {
@@ -166,7 +197,6 @@
             }
           };
         });
-
         // Delete user
         document.querySelectorAll('.delete-user-btn').forEach(btn => {
           btn.onclick = async function() {
@@ -179,7 +209,7 @@
                 const data = await response.json();
                 if (response.ok) {
                   alert(data.message);
-                  loadAllUsers(); // Reload users after deletion
+                  loadAllUsers(selectedDept, page); // Reload users after deletion
                 } else {
                   alert(data.message || 'Failed to delete user');
                 }
@@ -190,7 +220,12 @@
             }
           };
         });
-
+        // Add event listeners for tabs
+        document.querySelectorAll('.dept-tab').forEach(tab => {
+          tab.onclick = function() {
+            loadAllUsers(tab.getAttribute('data-dept'), 1);
+          };
+        });
       } catch (error) {
         console.error('Error loading users:', error);
         alert('Failed to load users.');
@@ -324,7 +359,7 @@
       });
     }
     window.addEventListener('DOMContentLoaded', function() {
-      loadAllUsers();
+  loadAllUsers('all', 1);
       loadAllReports();
     });
   </script>

@@ -22,94 +22,67 @@
 </head>
 <body>
   <nav class="navbar">
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        background: #f4f4f4;
-        margin: 0;
-        padding: 0;
+    <div class="navbar-left">
+      <img src="mb.jpeg" alt="logo">
+      <div class="site-name">Welcome, <span id="userName">User</span></div>
+    </div>
+    <div class="navbar-right">
+      <button class="nav-cta" onclick="exportToExcel()">Export To Excel</button>
+      <div class="user-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="4" fill="#22a7f0"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7" fill="#22a7f0"/></svg></div>
+    </div>
+  </nav>
+  <div class="container">
+    <button class="back-btn" onclick="window.location.href='index.html'">&#8592;</button>
+    <div class="charts">
+      <div class="chart-container">
+        <canvas id="pieChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <canvas id="barChart"></canvas>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Set user name from sessionStorage
+    document.getElementById('userName').textContent = sessionStorage.getItem('userEmail') || 'User';
+
+    // Get reports from backend API
+    async function getReports() {
+      try {
+        const response = await fetch('/api/reports');
+        if (!response.ok) throw new Error('Failed to fetch reports');
+        return await response.json();
+      } catch (e) {
+        console.error('Error fetching reports:', e);
+        return [];
       }
-      .container {
-        max-width: 900px;
-        margin: 40px auto;
-        background: #fff;
-        border-radius: 10px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.12);
-        padding: 32px 28px 24px 28px;
-      }
-      .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 24px;
-      }
-      .header h2 {
-        font-size: 1.4rem;
-        font-weight: 700;
-      }
-      .export-btn {
-        background: #22a7f0;
-        color: #fff;
-        border: none;
-        padding: 10px 18px;
-        border-radius: 4px;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: background 0.2s;
-      }
-      .export-btn:hover {
-        background: #1780b8;
-      }
-      .chart-container {
-        width: 100%;
-        min-width: 400px;
-        margin-bottom: 32px;
-      }
-      .report-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 18px;
-      }
-      .report-table th, .report-table td {
-        border: 1px solid #e0e0e0;
-        padding: 10px 8px;
-        text-align: left;
-      }
-      .report-table th {
-        background: #f5f5f5;
-        font-weight: 600;
-      }
-      .report-table tr:nth-child(even) {
-        background: #fafafa;
-      }
-      @media (max-width: 800px) {
-        .container {
-          padding: 6px;
-        }
-        .chart-container {
-          width: 100vw;
-          min-width: 0;
-          overflow-x: auto;
-        }
-        .export-btn {
-          font-size: 0.95rem;
-          padding: 8px 12px;
-          margin-bottom: 10px;
-        }
-        .header h2 {
-          font-size: 1.1rem;
-        }
-        .report-table {
-          font-size: 0.95rem;
-          width: 98vw;
-          overflow-x: auto;
-          display: block;
-        }
-        .report-table th, .report-table td {
-          padding: 6px 4px;
-        }
-      }
-    </style>
+    }
+
+    // Pie chart: Pending vs Resolved
+    function getStatusCounts(reports) {
+      let pending = 0, resolved = 0;
+      reports.forEach(r => {
+        if (r.status && r.status.toLowerCase() === 'resolved') resolved++;
+        else pending++;
+      });
+      return { pending, resolved };
+    }
+
+    // Bar chart: Count by department
+    function getDeptCounts(reports) {
+      const counts = {};
+      reports.forEach(r => {
+        const dept = r.department || 'Unknown';
+        counts[dept] = (counts[dept] || 0) + 1;
+      });
+      return counts;
+    }
+
+    async function renderCharts() {
+      const reports = await getReports();
+      // Pie chart
+      const { pending, resolved } = getStatusCounts(reports);
+      const pieData = {
         labels: ['Pending', 'Resolved'],
         datasets: [{
           data: [pending, resolved],
