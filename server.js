@@ -253,7 +253,57 @@ app.post('/api/reports', upload.single('image'), (req, res) => {
         console.error('Database error adding report:', err.message);
         return res.status(500).json({ message: 'Internal server error' });
       }
-      // ...existing email logic...
+      // Send email to assigned staff when report is created
+      if (staff) {
+        console.log('Attempting to send assignment email to:', staff);
+        const nodemailer = require('nodemailer');
+        const transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST,
+          port: process.env.SMTP_PORT,
+          secure: process.env.SMTP_SECURE === 'true',
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASSWORD,
+          },
+        });
+        const subject = `New Helpdesk Report Assigned: ${issue}`;
+        const html = `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <h2 style="color: #22a7f0;">A New Helpdesk Report Has Been Assigned to You</h2>
+            <table style="border-collapse:collapse;width:100%;margin-top:12px;">
+              <tr>
+                <th style="background:#f3f8fc;color:#22a7f0;padding:8px;text-align:left;border:1px solid #e0e0e0;">Issue</th>
+                <td style="padding:8px;border:1px solid #e0e0e0;">${issue}</td>
+              </tr>
+              <tr>
+                <th style="background:#f3f8fc;color:#22a7f0;padding:8px;text-align:left;border:1px solid #e0e0e0;">Description</th>
+                <td style="padding:8px;border:1px solid #e0e0e0;">${description}</td>
+              </tr>
+              <tr>
+                <th style="background:#f3f8fc;color:#22a7f0;padding:8px;text-align:left;border:1px solid #e0e0e0;">Department</th>
+                <td style="padding:8px;border:1px solid #e0e0e0;">${department}</td>
+              </tr>
+              <tr>
+                <th style="background:#f3f8fc;color:#22a7f0;padding:8px;text-align:left;border:1px solid #e0e0e0;">Reported By</th>
+                <td style="padding:8px;border:1px solid #e0e0e0;">${reportedBy}</td>
+              </tr>
+            </table>
+            <p style="margin-top:18px;">Please log in to the Helpdesk system to view and resolve this report.</p>
+          </div>
+        `;
+        transporter.sendMail({
+          from: process.env.SMTP_USER,
+          to: staff,
+          subject,
+          html
+        }, (error, info) => {
+          if (error) {
+            console.error('Error sending assignment email to staff:', error);
+          } else {
+            console.log('Assignment email sent to', staff, 'info:', info.response);
+          }
+        });
+      }
       res.status(201).json({ message: 'Report added successfully', id: this.lastID, image: imagePath });
     }
   );
@@ -338,12 +388,29 @@ app.put('/api/reports/:id', (req, res) => {
           const html = `
             <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
               <h2 style="color: #22a7f0;">Your Helpdesk Report Has Been Resolved</h2>
-              <p><b>Issue:</b> ${report.issue}</p>
-              <p><b>Description:</b> ${report.description}</p>
-              <p><b>Resolution:</b> ${report.resolution}</p>
-              <p><b>Resolved By:</b> ${report.staff}</p>
-              <p><b>Date Closed:</b> ${report.dateClosed || ''}</p>
-              <p>Thank you for using the Helpdesk!</p>
+              <table style="border-collapse:collapse;width:100%;margin-top:12px;">
+                <tr>
+                  <th style="background:#f3f8fc;color:#22a7f0;padding:8px;text-align:left;border:1px solid #e0e0e0;">Issue</th>
+                  <td style="padding:8px;border:1px solid #e0e0e0;">${report.issue}</td>
+                </tr>
+                <tr>
+                  <th style="background:#f3f8fc;color:#22a7f0;padding:8px;text-align:left;border:1px solid #e0e0e0;">Description</th>
+                  <td style="padding:8px;border:1px solid #e0e0e0;">${report.description}</td>
+                </tr>
+                <tr>
+                  <th style="background:#f3f8fc;color:#22a7f0;padding:8px;text-align:left;border:1px solid #e0e0e0;">Resolution</th>
+                  <td style="padding:8px;border:1px solid #e0e0e0;">${report.resolution}</td>
+                </tr>
+                <tr>
+                  <th style="background:#f3f8fc;color:#22a7f0;padding:8px;text-align:left;border:1px solid #e0e0e0;">Resolved By</th>
+                  <td style="padding:8px;border:1px solid #e0e0e0;">${report.staff}</td>
+                </tr>
+                <tr>
+                  <th style="background:#f3f8fc;color:#22a7f0;padding:8px;text-align:left;border:1px solid #e0e0e0;">Date Closed</th>
+                  <td style="padding:8px;border:1px solid #e0e0e0;">${report.dateClosed || ''}</td>
+                </tr>
+              </table>
+              <p style="margin-top:18px;">Thank you for using the Helpdesk!</p>
             </div>
           `;
           // Send to reporter
