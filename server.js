@@ -23,6 +23,59 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 const app = express();
+// CSV user loader
+const csv = require('csv-parser');
+let csvUsers = [];
+function normalizeKey(key) {
+  return key.trim().toLowerCase().replace(/\s+/g, '');
+}
+fs.createReadStream(path.join(__dirname, 'mbusers.csv'))
+  .pipe(csv())
+  .on('data', (row) => {
+    // Normalize keys for each row
+    const keys = Object.keys(row);
+    let normRow = {};
+    keys.forEach(k => {
+      normRow[normalizeKey(k)] = row[k];
+    });
+    csvUsers.push({
+      email: normRow['email'],
+      firstname: normRow['firstname'],
+      lastname: normRow['lastname']
+      // department: normRow['department'] // If you add department
+    });
+  });
+
+// API to get all users from CSV
+// API to get all users from CSV and DB
+app.get('/api/allusers', async (req, res) => {
+  try {
+    db.all('SELECT email, firstname, lastname, department FROM users', [], (err, dbUsers) => {
+      if (err) {
+        console.error('Database error fetching users:', err.message);
+        return res.status(500).json({ message: 'Internal server error' });
+      }
+      // Merge CSV and DB users, avoiding duplicates
+      const emails = new Set();
+      const all = [];
+      csvUsers.forEach(u => {
+        if (u.email && !emails.has(u.email)) {
+          all.push(u);
+          emails.add(u.email);
+        }
+      });
+      dbUsers.forEach(u => {
+        if (u.email && !emails.has(u.email)) {
+          all.push(u);
+          emails.add(u.email);
+        }
+      });
+      res.json(all);
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 const PORT = process.env.PORT || 5500;
 
 // Enable CORS for all routes
@@ -74,7 +127,20 @@ app.post('/login', (req, res) => {
     if (user) {
       res.json({ success: true, user });
     } else {
-      res.status(404).json({ success: false, message: 'User not found' });
+      // Check CSV users if not found in DB
+      const csvUser = csvUsers.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
+      if (csvUser) {
+        // Return a user object similar to DB format
+        res.json({ success: true, user: {
+          email: csvUser.email,
+          firstname: csvUser.firstname,
+          lastname: csvUser.lastname,
+          role: 'csv',
+          department: csvUser.department || ''
+        }});
+      } else {
+        res.status(404).json({ success: false, message: 'User not found' });
+      }
     }
   });
 });

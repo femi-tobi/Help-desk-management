@@ -20,6 +20,7 @@
 </head>
 <body>
   <div class="container">
+  <!-- All Emails section removed; now part of Users tab -->
   <button class="btn" id="clearReportsBtn" style="float:right;margin-bottom:16px;">Clear All Reports</button>
     <h2>Super Admin Dashboard</h2>
     <form class="add-user-form" id="addUserForm">
@@ -32,8 +33,8 @@
       <button type="submit" class="btn">Add User</button>
     </form>
     <!-- Department filter dropdown removed, tabs only -->
-    <div id="deptTabs" style="display:flex;gap:10px;margin-bottom:18px;"></div>
-    <h3>Users</h3>
+  <div id="deptTabs" style="display:flex;gap:10px;margin-bottom:18px;"></div>
+  <h3 id="usersHeader">Users</h3>
     <table>
       <thead>
         <tr>
@@ -62,6 +63,8 @@
     </table>
   </div>
   <script>
+    // Show all emails from CSV and DB
+    // Removed showAllEmails; now handled in loadAllUsers for 'All Department'
     // Clear all reports (still uses localStorage for reports for now)
     document.getElementById('clearReportsBtn').onclick = async function() {
       if (confirm('Are you sure you want to delete all reports?')) {
@@ -125,38 +128,48 @@
     // Load all users from database
     async function loadAllUsers(selectedDept = 'all', page = 1) {
       try {
-        const response = await fetch('/api/users');
-        const users = await response.json();
-        const tbody = document.getElementById('allUsersBody');
-        tbody.innerHTML = '';
-        // Get unique departments
-        const departments = [...new Set(users.map(u => u.department).filter(Boolean))];
-        // Populate department tabs
+        let users = [];
+        let departments = [];
+        // For 'All Department', fetch merged users from /api/allusers
+        if (selectedDept === 'all') {
+          const response = await fetch('/api/allusers');
+          users = await response.json();
+          // Get unique departments from merged users
+          departments = [...new Set(users.map(u => u.department).filter(Boolean))];
+        } else {
+          // For specific department, fetch only DB users
+          const response = await fetch('/api/users');
+          users = await response.json();
+          departments = [...new Set(users.map(u => u.department).filter(Boolean))];
+        }
+        // Populate department tabs (first tab is 'All Department')
         const deptTabs = document.getElementById('deptTabs');
-        deptTabs.innerHTML = departments.map(d => `<button class="btn dept-tab" data-dept="${d}">${d}</button>`).join('');
-        // Filter users by department
+        deptTabs.innerHTML = `<button class="btn dept-tab" data-dept="all">All Department</button>` + departments.map(d => `<button class="btn dept-tab" data-dept="${d}">${d}</button>`).join('');
+        // Filter users by department if not 'all'
         let filteredUsers = users;
         if (selectedDept !== 'all') {
           filteredUsers = users.filter(u => u.department === selectedDept);
         }
         // Pagination logic
-        const usersPerPage = 10;
+        const usersPerPage = 20; // Changed from 10 to 20
         const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
         const startIdx = (page - 1) * usersPerPage;
         const endIdx = startIdx + usersPerPage;
         const pagedUsers = filteredUsers.slice(startIdx, endIdx);
+        // Render user table
+        const tbody = document.getElementById('allUsersBody');
+        tbody.innerHTML = '';
         pagedUsers.forEach(u => {
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>${u.email}</td>
-            <td>
-              <select data-email="${u.email}" class="roleSelect">
+            <td>${u.role ? `<select data-email="${u.email}" class="roleSelect">
                 <option value="user" ${u.role==='user'?'selected':''}>User</option>
                 <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
                 <option value="superadmin" ${u.role==='superadmin'?'selected':''}>Super Admin</option>
-              </select>
+              </select>` : (u.role || '')}
             </td>
-            <td>${u.department}</td>
+            <td>${u.department || ''}</td>
             <td><button class="btn delete-user-btn" data-email="${u.email}">Delete</button></td>
           `;
           tbody.appendChild(tr);
@@ -174,7 +187,7 @@
             paginationDiv.appendChild(btn);
           }
         }
-        // Role change
+        // Role change (only for DB users)
         document.querySelectorAll('.roleSelect').forEach(sel => {
           sel.onchange = async function() {
             const email = this.getAttribute('data-email');
@@ -197,7 +210,7 @@
             }
           };
         });
-        // Delete user
+        // Delete user (only for DB users)
         document.querySelectorAll('.delete-user-btn').forEach(btn => {
           btn.onclick = async function() {
             const email = this.getAttribute('data-email');
@@ -226,6 +239,8 @@
             loadAllUsers(tab.getAttribute('data-dept'), 1);
           };
         });
+        // Update header for Users section
+        document.getElementById('usersHeader').textContent = selectedDept === 'all' ? 'All Department (CSV + DB)' : `Users (${selectedDept})`;
       } catch (error) {
         console.error('Error loading users:', error);
         alert('Failed to load users.');
@@ -256,9 +271,18 @@
         filteredReports = reports.filter(r => r.department === currentUser.department);
       }
       filteredReports.forEach((r) => {
+        // Ensure deptUsers are unique by email
         let deptUsers = users.filter(u => u.department === r.department);
+        let uniqueDeptUsers = [];
+        let seenEmails = new Set();
+        deptUsers.forEach(u => {
+          if (!seenEmails.has(u.email)) {
+            uniqueDeptUsers.push(u);
+            seenEmails.add(u.email);
+          }
+        });
         let canReassign = (currentUser && (currentUser.role === 'superadmin' || (currentUser.role === 'admin' && r.department === currentUser.department)) && r.status !== 'resolved');
-        let userOptions = deptUsers.map(u => `<option value="${u.email}" ${r.staff === u.email ? 'selected' : ''}>${u.email}</option>`).join('');
+        let userOptions = uniqueDeptUsers.map(u => `<option value="${u.email}" ${r.staff === u.email ? 'selected' : ''}>${u.email}</option>`).join('');
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${r.issue}</td>
@@ -359,7 +383,7 @@
       });
     }
     window.addEventListener('DOMContentLoaded', function() {
-  loadAllUsers('all', 1);
+      loadAllUsers('all', 1);
       loadAllReports();
     });
   </script>

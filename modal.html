@@ -172,7 +172,7 @@
                             <div>
                                 <label for="staff">Staff Assigned</label>
                                 <div style="position:relative;">
-                                    <input type="text" id="staffSearch" placeholder="Search staff email..." style="width:100%;margin-bottom:8px;">
+                                    <input type="text" id="staffSearch" placeholder="Search by first or last name..." style="width:100%;margin-bottom:8px;">
                                     <div id="staffSearchDropdown" style="position:absolute;top:38px;left:0;width:100%;background:#fff;border:1px solid #e0e0e0;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);z-index:10;display:none;"></div>
                                 </div>
                                 <select id="staff" name="staff" required>
@@ -233,47 +233,52 @@
 
         let allStaffUsers = [];
         async function updateStaffOptions(filterText = '') {
-            const dept = document.getElementById('department').value;
+            // Fetch all users from CSV
+            if (allStaffUsers.length === 0) {
+                try {
+                    const response = await fetch('/api/allusers');
+                    allStaffUsers = await response.json();
+                } catch (error) {
+                    console.error('Error fetching staff:', error);
+                    return;
+                }
+            }
             const staffSelect = document.getElementById('staff');
             staffSelect.innerHTML = '<option value="">Select staff</option>';
             const dropdown = document.getElementById('staffSearchDropdown');
             dropdown.innerHTML = '';
             dropdown.style.display = 'none';
-            if (!dept) return;
-            try {
-                const response = await fetch(`/api/users/department/${dept}`);
-                allStaffUsers = await response.json();
-                let filteredUsers = allStaffUsers;
-                if (filterText && filterText.length >= 2) {
-                    filteredUsers = allStaffUsers.filter(user => user.email.toLowerCase().includes(filterText.toLowerCase()));
-                    // Show dropdown if matches found
-                    if (filteredUsers.length > 0) {
-                        dropdown.style.display = 'block';
-                        filteredUsers.forEach(user => {
-                            const item = document.createElement('div');
-                            item.textContent = user.email;
-                            item.style.padding = '8px 12px';
-                            item.style.cursor = 'pointer';
-                            item.onmouseover = function() { item.style.background = '#f0f8ff'; };
-                            item.onmouseout = function() { item.style.background = '#fff'; };
-                            item.onclick = function() {
-                                staffSelect.value = user.email;
-                                document.getElementById('staffSearch').value = user.email;
-                                dropdown.style.display = 'none';
-                            };
-                            dropdown.appendChild(item);
-                        });
-                    }
+            let filteredUsers = allStaffUsers;
+            if (filterText && filterText.length >= 2) {
+                filteredUsers = allStaffUsers.filter(user =>
+                    (user.firstname && user.firstname.toLowerCase().includes(filterText.toLowerCase())) ||
+                    (user.lastname && user.lastname.toLowerCase().includes(filterText.toLowerCase()))
+                );
+                // Show dropdown if matches found
+                if (filteredUsers.length > 0) {
+                    dropdown.style.display = 'block';
+                    filteredUsers.forEach(user => {
+                        const item = document.createElement('div');
+                        item.textContent = `${user.firstname} ${user.lastname} (${user.email})`;
+                        item.style.padding = '8px 12px';
+                        item.style.cursor = 'pointer';
+                        item.onmouseover = function() { item.style.background = '#f0f8ff'; };
+                        item.onmouseout = function() { item.style.background = '#fff'; };
+                        item.onclick = function() {
+                            staffSelect.value = user.email;
+                            document.getElementById('staffSearch').value = `${user.firstname} ${user.lastname}`;
+                            dropdown.style.display = 'none';
+                        };
+                        dropdown.appendChild(item);
+                    });
                 }
-                filteredUsers.forEach(user => {
-                    const opt = document.createElement('option');
-                    opt.value = user.email;
-                    opt.textContent = user.email;
-                    staffSelect.appendChild(opt);
-                });
-            } catch (error) {
-                console.error('Error fetching staff:', error);
             }
+            filteredUsers.forEach(user => {
+                const opt = document.createElement('option');
+                opt.value = user.email;
+                opt.textContent = `${user.firstname} ${user.lastname} (${user.email})`;
+                staffSelect.appendChild(opt);
+            });
         }
 
         // Populate departments and staff on load
