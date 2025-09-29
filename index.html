@@ -326,10 +326,11 @@
       }
 
   filtered.slice().reverse().forEach(function(report, idx) {
+        const issueNumber = String(filtered.length - idx).padStart(3, '0');
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${idx + 1}</td>
-          <td>ISSUE-${1000 + idx}</td>
+          <td>${issueNumber}</td>
           <td>${report.issue || ''}</td>
           <td>${report.description || ''}</td>
           <td>${report.reportedBy || ''}</td>
