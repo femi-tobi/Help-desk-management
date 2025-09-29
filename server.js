@@ -258,6 +258,11 @@ app.post('/api/reports', upload.single('image'), (req, res) => {
       if (staff) {
         console.log('Attempting to send assignment email to:', staff);
         const subject = `New Helpdesk Report Assigned: ${issue}`;
+        let imageHtml = '';
+        if (imagePath) {
+          const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+          imageHtml = `<div style="margin-top:18px;"><strong>Attached Image:</strong><br><img src='${baseUrl}${imagePath}' alt='Report Image' style='max-width:320px;border-radius:8px;border:1px solid #e0e0e0;margin-top:8px;'></div>`;
+        }
         const html = `
           <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <h2 style="color: #22a7f0;">A New Helpdesk Report Has Been Assigned to You</h2>
@@ -279,6 +284,7 @@ app.post('/api/reports', upload.single('image'), (req, res) => {
                 <td style="padding:8px;border:1px solid #e0e0e0;">${reportedBy}</td>
               </tr>
             </table>
+            ${imageHtml}
             <p style="margin-top:18px;">Please log in to the Helpdesk system to view and resolve this report.</p>
           </div>
         `;
