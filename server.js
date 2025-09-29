@@ -237,7 +237,8 @@ app.delete('/api/users/:email', (req, res) => {
 });
 
 // API to create a new report
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 app.post('/api/reports', upload.single('image'), (req, res) => {
   const { issue, description, branch, department, staff, status, resolution, reportedBy, dateReported, timeReported, resolutionTime, dateClosed } = req.body;
@@ -256,16 +257,6 @@ app.post('/api/reports', upload.single('image'), (req, res) => {
       // Send email to assigned staff when report is created
       if (staff) {
         console.log('Attempting to send assignment email to:', staff);
-        const nodemailer = require('nodemailer');
-        const transporter = nodemailer.createTransport({
-          host: process.env.SMTP_HOST,
-          port: process.env.SMTP_PORT,
-          secure: process.env.SMTP_SECURE === 'true',
-          auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASSWORD,
-          },
-        });
         const subject = `New Helpdesk Report Assigned: ${issue}`;
         const html = `
           <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
@@ -291,18 +282,19 @@ app.post('/api/reports', upload.single('image'), (req, res) => {
             <p style="margin-top:18px;">Please log in to the Helpdesk system to view and resolve this report.</p>
           </div>
         `;
-        transporter.sendMail({
-          from: process.env.SMTP_USER,
+        const msg = {
           to: staff,
+          from: process.env.SENDGRID_SENDER,
           subject,
-          html
-        }, (error, info) => {
-          if (error) {
+          html,
+        };
+        sgMail.send(msg)
+          .then(() => {
+            console.log('Assignment email sent to', staff);
+          })
+          .catch((error) => {
             console.error('Error sending assignment email to staff:', error);
-          } else {
-            console.log('Assignment email sent to', staff, 'info:', info.response);
-          }
-        });
+          });
       }
       res.status(201).json({ message: 'Report added successfully', id: this.lastID, image: imagePath });
     }
