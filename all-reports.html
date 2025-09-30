@@ -24,7 +24,7 @@
         <tr>
           <th>S/N</th>
           <th>Issue no</th>
-          <th>Issue reported</th>
+          <th style="min-width:220px;max-width:380px;white-space:pre-line;">Issue reported</th>
           <th style="min-width:320px;max-width:480px;white-space:pre-line;">Issue description</th>
           <th>Date reported</th>
           <th>Time reported</th>
@@ -50,10 +50,11 @@
       const tbody = document.getElementById('allReportsBody');
       tbody.innerHTML = '';
   reports.slice().reverse().forEach(function(report, idx) {
+        const issueNumber = String(reports.length - idx).padStart(3, '0');
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${idx + 1}</td>
-          <td>ISSUE-${1000 + idx}</td>
+          <td>${issueNumber}</td>
           <td>${report.issue || ''}</td>
           <td>${report.description || ''}</td>
           <td>${report.dateReported || ''}</td>
